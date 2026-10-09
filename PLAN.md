@@ -93,7 +93,9 @@ tweet-trends/
     config.py            # Settings (.env) + TrackingConfig (config.yaml) + Places (places.yaml)
     db.py                # engine, init_db(), session()
     models.py            # SQLModel tables
-    x_client.py          # XClient (real) + MockXClient + get_client()
+    x_client.py          # XClient (real) + get_client()
+    mock_data.py         # MockXClient + generated Telugu/English posts for mock mode
+    views.py             # data for each page (routes stay thin)
     budget.py            # credit ledger, daily limit check, cost estimates
     jobs.py              # APScheduler setup + job wrappers that record errors
     services/
@@ -105,15 +107,14 @@ tweet-trends/
       insights.py        # needs_attention, share_of_voice, attack_lines, heatmap, scoring
     templates/
       base.html          # shell: sidebar (desktop) / bottom tabs (phone), theme tokens
-      _post_card.html    # shared post card
-      _filters.html      # time window + AC filter bar
+      _ui.html           # shared macros: post card, filters, icons, sparkline
       today.html, constituency.html, place.html, party.html,
       delhi.html, explore.html, usage.html
     static/
       app.css
   tests/
     test_places.py, test_insights.py, test_tagger.py, test_budget.py,
-    test_trends.py, test_x_client.py
+    test_trends.py, test_x_client.py, test_app.py
   data/                  # SQLite file (gitignored, a Docker volume)
   config.yaml
   places.yaml
@@ -618,7 +619,7 @@ services:
     environment:
       TZ: Asia/Kolkata
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     volumes:
       - tracker-data:/app/data
       - ./config.yaml:/app/config.yaml:ro

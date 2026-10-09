@@ -1,0 +1,189 @@
+# What the tracker follows. Restart the app after editing.
+
+# Local: one search query per AC is built automatically from places.yaml.
+# Ambiguous aliases are left out of the X query (to save credits) and only used for matching.
+local:
+  extra_terms: ["Palnadu", "పల్నాడు"]
+  query_suffix: "-is:retweet"
+
+# Handles found by web search (Oct 2026). Confirm each one on x.com (verified badge,
+# bio) before going live. Leaders whose handle could not be found are listed in
+# comments; add them once the office confirms their handles.
+
+mp:
+  handle: SriKrishnaLavu          # Lavu Sri Krishna Devarayalu; bio: "TDP Parliamentary Chairperson", Narasaraopet
+  track_mentions: true            # also search "@SriKrishnaLavu -from:SriKrishnaLavu" (public reaction to the MP)
+
+parties:
+  tdp:
+    label: TDP
+    color: "#F2C200"
+    handles:
+      - JaiTDP                    # official party account (listed on TDP's own pages)
+      - ncbn                      # N. Chandrababu Naidu, CM and party president
+      - naralokesh                # Nara Lokesh, national general secretary
+      - AndhraPradeshCM           # CMO Andhra Pradesh (government account)
+      - SriKrishnaLavu            # the MP
+      - PullaRaoP_TDP             # Prathipati Pulla Rao, MLA Chilakaluripet
+      - Yarapathineni_S           # Yarapathineni Srinivasa Rao, MLA Gurajala
+    # Handle not found yet. Add after checking on x.com:
+    #   Chadalavada Aravinda Babu (MLA Narasaraopet), Kanna Lakshmi Narayana (MLA Sattenapalle),
+    #   G. V. Anjaneyulu (MLA Vinukonda), Julakanti Brahmananda Reddy (MLA Macherla),
+    #   Bhashyam Praveen (Pedakurapadu; confirm he is the sitting MLA)
+    keywords: []   # Cost cut: party-wide hashtag/keyword streams (#TDP, తెలుగుదేశం) dropped; accounts only
+  ysrcp:
+    label: YSRCP
+    color: "#1F6FD1"
+    handles:
+      - YSRCParty                 # official party account
+      - ysjagan                   # Y. S. Jagan Mohan Reddy, party president
+      - VidadalaRajini            # Vidadala Rajini, ex-minister, Chilakaluripet
+    # Handle not found yet. Add after checking on x.com:
+    #   Gopireddy Srinivasa Reddy (Narasaraopet), Ambati Rambabu (Sattenapalle),
+    #   Kasu Mahesh Reddy (Gurajala), Pinnelli Ramakrishna Reddy (Macherla),
+    #   Bolla Brahma Naidu (Vinukonda), Namburu Sankara Rao (Pedakurapadu)
+    keywords: []   # Cost cut: #YSRCP, వైఎస్సార్సీపీ dropped; accounts only
+
+delhi:
+  # Group 1: Parliament. Fetched in full (the floor leader needs all House business).
+  parliament_handles:
+    - LokSabhaSectt               # Lok Sabha Secretariat
+    - sansad_tv                   # Sansad TV (listed on sansadtv.nic.in)
+    - ombirlakota                 # Om Birla, Speaker, 18th Lok Sabha
+    - mpa_india                   # Ministry of Parliamentary Affairs
+    - RamMNK                      # K. Ram Mohan Naidu, Union Civil Aviation Minister (TDP)
+    - PemmasaniOnX                # Dr. Chandra Sekhar Pemmasani, MoS Rural Development & Communications (TDP)
+
+  # Group 2: PM and Union ministries. Fetched ONLY when the post is about Andhra Pradesh.
+  # The ap_filter is added to the X query itself, so non-AP posts are never downloaded
+  # and never cost credits. The query builder splits the handles into as many
+  # "(from:a OR from:b ...) <ap_filter> -is:retweet" queries as the length limit needs.
+  ap_filter: >-
+    (Andhra OR AndhraPradesh OR "Andhra Pradesh" OR ఆంధ్రప్రదేశ్ OR ఆంధ్ర
+    OR Amaravati OR Polavaram OR Visakhapatnam OR Vizag OR Vijayawada OR Guntur
+    OR Tirupati OR Kurnool OR Nellore OR Srikakulam OR Palnadu OR Narasaraopet
+    OR @AndhraPradeshCM OR @ncbn)
+  national_handles:
+    # Prime Minister
+    - narendramodi                # Narendra Modi
+    - PMOIndia                    # Prime Minister's Office
+    # Central communication
+    - PIB_India                   # Press Information Bureau
+    - NITIAayog                   # NITI Aayog
+    - MIB_India                   # Information & Broadcasting
+    # Infrastructure (highways, rail, air, power, water)
+    - MORTHIndia                  # Road Transport & Highways
+    - NHAI_Official               # National Highways Authority of India
+    - shipmin_india               # Ports, Shipping & Waterways
+    - RailMinIndia                # Railways
+    - MoCA_GoI                    # Civil Aviation
+    - MinOfPower                  # Power
+    - mnreindia                   # New & Renewable Energy
+    - PetroleumMin                # Petroleum & Natural Gas
+    - DoWRRDGR_MoJS               # Jal Shakti: water resources, river development (Polavaram)
+    - MoJSDDWS                    # Jal Shakti: drinking water & sanitation
+    - jaljeevan_                  # Jal Jeevan Mission
+    - MoHUA_India                 # Housing & Urban Affairs
+    - DoT_India                   # Telecommunications
+    # Schemes, welfare, rural
+    - MoRD_GoI                    # Rural Development (MGNREGA, PMAY-G)
+    - mopr_goi                    # Panchayati Raj
+    - AgriGoI                     # Agriculture & Farmers Welfare (PM-KISAN)
+    - fertmin_india               # Fertilizers
+    - FisheriesGoI                # Fisheries
+    - fooddeptgoi                 # Food & Public Distribution
+    - jagograhakjago              # Consumer Affairs
+    - MinOfCooperatn              # Cooperation
+    - MoHFW_INDIA                 # Health & Family Welfare
+    - EduMinOfIndia               # Education
+    - MinistryWCD                 # Women & Child Development
+    - MSJEGOI                     # Social Justice & Empowerment
+    - MOMAIndia                   # Minority Affairs
+    - TribalAffairsIn             # Tribal Affairs
+    - LabourMinistry              # Labour & Employment
+    - MSDESkillIndia              # Skill India (check it is the ministry's own account)
+    - YASMinistry                 # Youth Affairs & Sports
+    # Economy and industry
+    - FinMinIndia                 # Finance
+    - CimGOI                      # Commerce & Industry (minister's office)
+    - minmsme                     # MSME
+    - SteelMinIndia               # Steel (Vizag Steel Plant)
+    - MHI_GoI                     # Heavy Industries
+    - GoI_MeitY                   # Electronics & IT
+    - TexMinIndia                 # Textiles
+    - CoalMinistry                # Coal
+    - MinesMinIndia               # Mines
+    - tourismgoi                  # Tourism
+    - MinOfCultureGoI             # Culture
+    - moefcc                      # Environment, Forest & Climate Change
+    # Home, defence, external
+    - HMOIndia                    # Home Minister's Office
+    - SpokespersonMoD             # Defence (active PR account)
+    - MEAIndia                    # External Affairs (spokesperson)
+
+  # Group 3: AP government and party, as seen from Delhi. These accounts are already
+  # fetched in full by the TDP party job, so this costs NO extra credits. The Delhi
+  # page shows only their posts that match centre_filter (applied locally, in Python).
+  state_handles: [AndhraPradeshCM, JaiTDP]
+  centre_filter: [Centre, Central, Union, "Union Minister", Modi, "Prime Minister", PM,
+                  NDA, Delhi, Parliament, "Lok Sabha", NHAI, కేంద్ర, ప్రధాని]
+
+  # Topics the tagger picks from for Delhi posts (stored in Post.issue)
+  topics: [highways, railways, airports, ports, polavaram, amaravati_capital,
+           funds_budget, central_schemes, industry_investment, agriculture,
+           power_energy, health, education, parliament_business, other]
+
+  keywords:
+    - {name: AP in Parliament, query: '("Andhra Pradesh" OR AP) (Lok Sabha OR Parliament) -is:retweet'}
+    - {name: Polavaram,        query: 'Polavaram -is:retweet'}
+    - {name: Amaravati funds,  query: 'Amaravati (funds OR Centre OR Union) -is:retweet'}
+    - {name: Special status,   query: '"special status" Andhra -is:retweet'}
+  trends:
+    - {name: India, woeid: 23424848}
+    - {name: Delhi, woeid: 20070458}
+
+issues:              # fixed categories the tagger must choose from
+  - drinking_water
+  - irrigation
+  - farmers
+  - roads
+  - power
+  - health
+  - education
+  - law_and_order
+  - welfare_schemes
+  - jobs
+  - corruption
+  - other
+
+polling:             # base minutes; 0 disables. Adaptive backoff can stretch these.
+  local_minutes: 60           # cost cut: was 30
+  party_minutes: 60           # cost cut: was 30
+  burst_minutes: 30           # a query whose last poll came back full drops to this until it calms down
+  delhi_minutes: 60
+  trends_minutes: 120
+  tag_minutes: 5
+  quiet_hours: "23:00-06:00"  # IST; every interval is doubled in this window
+  max_backoff_factor: 4
+  max_results: 20             # per request, 10-100. Scheduled polls fetch one page only
+  query_max_length: 512       # X's search query length limit for your access level
+
+budget:
+  daily_credit_limit: 3.00     # USD; cost cut (was 5.00) = ~600 post reads/day
+  monthly_credit_limit: 90.00   # cost cut (was 150.00)
+  soft_limit_share: 0.8         # above 80% of the daily limit, only priority-1 streams keep running
+  priority_1: [local, mp_mentions, parliament]   # the rest (party, ministries, Delhi keywords, trends) pause first
+  # Published pay-per-use rates as of Oct 2026 (USD). Confirm in the X developer console.
+  cost_per_post_read: 0.005    # per post returned (search, timeline)
+  cost_per_user_lookup: 0.010  # per user returned. Check whether expansions=author_id is billed this way
+  bill_expanded_users: false   # set true if the $5 trial day shows usernames returned with posts are billed
+  cost_per_trends_call: 0.0    # not published; set after the first billed call
+  # LLM cost per 1M tokens (from your OpenCode dashboard)
+  llm_cost_per_mtok_in: 0.0
+  llm_cost_per_mtok_out: 0.0
+
+alerts:
+  window_hours: 6
+  min_negative_posts: 5
+  spike_factor: 2.0           # volume vs 7-day hourly baseline
+  urgency_threshold: 2        # 0-3

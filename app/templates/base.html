@@ -1,0 +1,78 @@
+{% from "_ui.html" import icon %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{{ title }} · Narasaraopet Pulse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Telugu:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  <script>
+    try { var t = localStorage.getItem("theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% set nav = [
+  ("/", "Today", "today"), ("/constituency", "Constituency", "map"), ("/party", "Party Pulse", "party"),
+  ("/delhi", "Delhi", "delhi"), ("/explore", "Explore", "search"), ("/usage", "Usage", "usage")] %}
+{% set active = "/constituency" if path == "/place" else path %}
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="/">
+      <span class="brand-mark">NP</span>
+      <span><span class="brand-name">Narasaraopet Pulse</span><br><span class="brand-sub">MP office · Palnadu</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      {% for href, text, ic in nav %}
+        {% if loop.index == 5 %}<div class="nav-sep"></div>{% endif %}
+        <a href="{{ href }}"{% if active == href %} aria-current="page"{% endif %}>{{ icon(ic) }}{{ text }}</a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-foot">
+      {% if mock %}<span class="badge-mock">Mock mode</span>{% endif %}
+      <span>Updated {{ updated|ago }}</span>
+      <button class="theme-btn" type="button" onclick="toggleTheme()">{{ icon("theme") }}Theme</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% if banner %}
+      <div class="banners" role="status">
+        {% for b in banner %}<div class="banner {{ b.level }}"><span>{{ b.text }}</span>{% if path != "/usage" %} <a href="/usage">Details</a>{% endif %}</div>{% endfor %}
+      </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+    <p class="foot-note">Times in IST. Tags are machine-generated; open the original post before acting on it.</p>
+  </main>
+</div>
+
+<nav class="tabbar" aria-label="Main">
+  {% for href, text, ic in nav[:4] %}
+    <a href="{{ href }}"{% if active == href %} aria-current="page"{% endif %}>{{ icon(ic) }}{{ text.split(" ")[0] }}</a>
+  {% endfor %}
+  <details class="more">
+    <summary>{{ icon("more") }}More</summary>
+    <div class="more-menu">
+      {% for href, text, ic in nav[4:] %}<a href="{{ href }}">{{ icon(ic) }}{{ text }}</a>{% endfor %}
+      <a href="#" onclick="toggleTheme(); return false;">{{ icon("theme") }}Theme</a>
+    </div>
+  </details>
+</nav>
+
+<script>
+  function toggleTheme() {
+    var root = document.documentElement;
+    var dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    root.dataset.theme = dark ? "light" : "dark";
+    try { localStorage.setItem("theme", root.dataset.theme); } catch (e) {}
+    document.dispatchEvent(new Event("themechange"));
+  }
+  function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

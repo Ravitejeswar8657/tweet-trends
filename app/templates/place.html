@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_ui.html" import post_card, window_filter, refresh_button %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <div class="crumbs"><a href="/constituency">Constituency</a> › <a href="/place?{{ qs(ac=p.ac, window=window) }}">{{ p.ac }}</a>{% if p.mandal %} › {{ p.mandal }}{% endif %}{% if p.issue %} › {{ p.issue|label }}{% endif %}</div>
+    <h1>{{ p.mandal or p.ac }}{% if p.issue %}: {{ p.issue|label }}{% endif %}</h1>
+    <p class="lede">{{ p.feed|length }} posts{% if p.mandal %} in {{ p.mandal }} mandal{% else %} in {{ p.ac }} assembly constituency{% endif %}, most active first.</p>
+  </div>
+  <div class="page-meta"><span>Updated {{ updated|ago }}</span>{{ refresh_button("local") }}</div>
+</header>
+
+<div class="filters">{{ window_filter("/place", window, {"ac": p.ac, "mandal": p.mandal, "issue": p.issue}) }}</div>
+
+<div class="stack">
+  <div>
+    <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Mandal</h3>
+    <div class="chips">
+      <a class="chip" href="/place?{{ qs(ac=p.ac, issue=p.issue, window=window) }}" aria-current="{{ 'true' if not p.mandal else 'false' }}">All mandals</a>
+      {% for m, n in p.mandal_counts.items() %}
+        <a class="chip" href="/place?{{ qs(ac=p.ac, mandal=m, issue=p.issue, window=window) }}" aria-current="{{ 'true' if p.mandal == m else 'false' }}">{{ m }} <span class="n">{{ n }}</span></a>
+      {% endfor %}
+    </div>
+  </div>
+  <div>
+    <h3 class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Issue</h3>
+    <div class="chips">
+      <a class="chip" href="/place?{{ qs(ac=p.ac, mandal=p.mandal, window=window) }}" aria-current="{{ 'true' if not p.issue else 'false' }}">All issues</a>
+      {% for i, n in p.issue_counts.items() %}
+        <a class="chip" href="/place?{{ qs(ac=p.ac, mandal=p.mandal, issue=i, window=window) }}" aria-current="{{ 'true' if p.issue == i else 'false' }}">{{ i|label }} <span class="n">{{ n }}</span></a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<section class="section card" aria-labelledby="vol">
+  <div class="section-head"><h2 id="vol">Posts over time</h2>
+    <div class="legend"><span><span class="swatch" style="background:var(--heat)"></span>All posts</span><span><span class="swatch" style="background:var(--neg)"></span>Negative</span></div>
+  </div>
+  <div class="chart-box sm"><canvas id="volume" aria-label="Posts per hour"></canvas></div>
+</section>
+
+<section class="section" aria-labelledby="feed">
+  <h2 id="feed" style="margin-bottom:12px">Posts</h2>
+  <div class="feed">
+    {% for post in p.feed %}{{ post_card(post) }}{% else %}<div class="empty">No posts match these filters in this time window.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  var DATA = {{ p.chart|tojson }};
+  var chart;
+  function draw() {
+    if (!window.Chart) return setTimeout(draw, 50);
+    if (chart) chart.destroy();
+    var text = cssVar("--muted"), grid = cssVar("--border");
+    chart = new Chart(document.getElementById("volume"), {
+      type: "bar",
+      data: { labels: DATA.labels, datasets: [
+        { label: "Negative", data: DATA.negative, backgroundColor: cssVar("--neg"), borderRadius: 3, stack: "s0" },
+        { label: "Other", data: DATA.volume.map(function (v, i) { return v - DATA.negative[i]; }), backgroundColor: cssVar("--heat"), borderRadius: 3, stack: "s0" }
+      ]},
+      options: { maintainAspectRatio: false, plugins: { legend: { display: false } },
+        scales: { x: { stacked: true, ticks: { color: text, maxRotation: 0, autoSkipPadding: 12 }, grid: { display: false } },
+                  y: { stacked: true, beginAtZero: true, ticks: { color: text, precision: 0 }, grid: { color: grid } } } }
+    });
+  }
+  document.addEventListener("DOMContentLoaded", draw);
+  document.addEventListener("themechange", draw);
+</script>
+{% endblock %}

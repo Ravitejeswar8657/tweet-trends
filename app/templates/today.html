@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon, post_card, refresh_button, place_chip %}
+{% block content %}
+<div id="live" hx-get="/" hx-trigger="every 120s" hx-select="#live" hx-swap="outerHTML">
+  <header class="page-head">
+    <div>
+      <h1>What needs attention right now?</h1>
+      <p class="lede">Local problems from the last {{ t.window_hours }} hours that are urgent or unusually loud, then the day at a glance.</p>
+    </div>
+    <div class="page-meta">
+      {% if mock %}<span class="badge-mock">Mock mode</span>{% endif %}
+      <span>Updated {{ updated|ago }}</span>
+      {{ refresh_button("local") }}
+    </div>
+  </header>
+
+  <section aria-labelledby="attn">
+    <h2 id="attn" class="sr-only">Needs attention</h2>
+    {% if t.cards %}
+      <div class="grid grid-2">
+        {% for c in t.cards %}
+          <article class="card alert {{ c.level }}">
+            <div class="row">
+              <span class="level {{ c.level }}">{{ "Urgent" if c.level == "red" else "Watch" }}</span>
+              {{ place_chip(c.ac, c.mandal) }}
+              <span class="chip">{{ c.issue|label }}</span>
+            </div>
+            <p class="gist">{{ c.gist or (c.issue|label ~ " complaints in " ~ (c.mandal or c.ac)) }}</p>
+            <p class="stats num">
+              {{ c.negative }} negative post{{ "s" if c.negative != 1 }}
+              {% if c.spike_ratio >= 1.5 %} · {{ (c.spike_ratio|round|int) if c.spike_ratio >= 10 else c.spike_ratio }}× usual{% endif %}
+              · highest urgency {{ c.max_urgency }}/3
+            </p>
+            <a class="go" href="/place?{{ qs(ac=c.ac, mandal=c.mandal, issue=c.issue, window='24h') }}">View posts →</a>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">{{ icon("check") }}<span>Nothing urgent in the last {{ t.window_hours }} hours. Local conversation is within normal levels.</span></div>
+    {% endif %}
+  </section>
+
+  <section class="section" aria-labelledby="glance">
+    <div class="section-head"><h2 id="glance">Last 24 hours</h2></div>
+    <div class="grid grid-4">
+      <a class="card kpi card-link" href="/constituency">
+        <div class="k-label">Local mentions</div>
+        <div class="k-value">{{ t.local_24 }}</div>
+        <div class="k-note num">
+          {% if t.local_change > 0 %}<span class="up">▲ {{ t.local_change }}</span>{% elif t.local_change < 0 %}<span class="down">▼ {{ -t.local_change }}</span>{% else %}no change{% endif %}
+          vs previous 24h
+        </div>
+      </a>
+      <a class="card kpi card-link" href="/party">
+        <div class="k-label">Share of voice</div>
+        {% set tdp = (t.sov.share.tdp * 100)|round|int %}
+        <div class="k-value">{{ tdp }}%<span class="muted" style="font-size:14px;font-weight:600"> TDP</span></div>
+        <div class="sovbar" style="margin-top:8px" role="img" aria-label="TDP {{ tdp }} percent, YSRCP {{ 100 - tdp }} percent">
+          {% if t.sov.totals.tdp + t.sov.totals.ysrcp %}<span class="tdp" style="width:{{ tdp }}%"></span><span class="ysrcp" style="width:{{ 100 - tdp }}%"></span>{% endif %}
+        </div>
+        <div class="k-note num">{{ t.sov.totals.tdp }} TDP · {{ t.sov.totals.ysrcp }} YSRCP posts</div>
+      </a>
+      <a class="card kpi card-link" href="/constituency">
+        <div class="k-label">Local negative</div>
+        <div class="k-value">{% if t.neg_share is not none %}{{ (t.neg_share * 100)|round|int }}%{% else %}–{% endif %}</div>
+        <div class="k-note">of tagged local posts</div>
+      </a>
+      <a class="card kpi card-link" href="/usage">
+        <div class="k-label">Credits today</div>
+        <div class="k-value">{{ t.budget.today|money }}</div>
+        <div class="meter {{ 'over' if t.budget.today_share >= 1 else 'warn' if t.budget.today_share >= 0.8 }}" style="margin-top:8px">
+          <span style="width: {{ [t.budget.today_share * 100, 100]|min|round(1) }}%"></span>
+        </div>
+        <div class="k-note num">of {{ t.budget.daily_limit|money }} daily limit</div>
+      </a>
+    </div>
+  </section>
+
+  <div class="grid grid-2 section">
+    <section aria-labelledby="dl">
+      <div class="section-head"><h2 id="dl">From Delhi</h2><a class="hint" href="/delhi">All Delhi →</a></div>
+      {% if t.delhi %}
+        <div class="feed">{% for p in t.delhi %}{{ post_card(p, compact=True, show_place=False) }}{% endfor %}</div>
+      {% else %}
+        <div class="empty">No AP-related posts from Delhi in the last 3 days.</div>
+      {% endif %}
+    </section>
+    <section aria-labelledby="tr">
+      <div class="section-head"><h2 id="tr">Breaking trends</h2><a class="hint" href="/delhi#trends">All trends →</a></div>
+      <div class="grid">
+        {% for loc in t.trends %}
+          <div class="card">
+            <h3 style="margin-bottom:6px">{{ loc.location }}</h3>
+            {% for tr in loc.trends %}
+              <div class="trend-row" style="grid-template-columns: 28px minmax(0,1fr) auto">
+                <span class="rank">{{ tr.rank }}</span><span class="name">{{ tr.name }}</span>
+                <span class="tbadge {{ tr.status }}">{{ "NEW" if tr.status == "NEW" else "▲ Rising" }}</span>
+              </div>
+            {% else %}
+              <p class="muted" style="font-size:14px">Nothing new or rising since the last check.</p>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

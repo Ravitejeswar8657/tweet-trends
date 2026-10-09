@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% from "_ui.html" import post_card, window_filter, refresh_button, splitbar %}
+{% block head %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>How are TDP and YSRCP doing?</h1>
+    <p class="lede">Posts from the tracked party accounts: who is louder, the tone on each side, and what the opposition is attacking.</p>
+  </div>
+  <div class="page-meta"><span>Updated {{ updated|ago }}</span>{{ refresh_button("party") }}</div>
+</header>
+
+<div class="filters">{{ window_filter("/party", window) }}</div>
+
+<div class="grid grid-2">
+  <section class="card" aria-labelledby="sov">
+    <div class="section-head"><h2 id="sov">Share of voice</h2><span class="hint">Posts by party accounts</span></div>
+    {% set tdp = (p.sov.share.tdp * 100)|round|int %}
+    <div class="sov">
+      <div><div class="who"><span class="swatch tdp"></span>TDP</div><div class="pct">{{ tdp }}%</div><div class="muted num" style="font-size:13px">{{ p.sov.totals.tdp }} posts</div></div>
+      <div><div class="who"><span class="swatch ysrcp"></span>YSRCP</div><div class="pct">{{ 100 - tdp if (p.sov.totals.tdp + p.sov.totals.ysrcp) else 0 }}%</div><div class="muted num" style="font-size:13px">{{ p.sov.totals.ysrcp }} posts</div></div>
+    </div>
+    <div class="chart-box" style="margin-top:12px"><canvas id="sovChart" aria-label="Posts per period by party"></canvas></div>
+  </section>
+
+  <section class="card stack" aria-labelledby="tone">
+    <div class="section-head"><h2 id="tone">Tone by party</h2></div>
+    {% for key, name in [("tdp", "TDP"), ("ysrcp", "YSRCP")] %}
+      {% set s = p.sentiment.get(key, {"pos": 0, "neu": 0, "neg": 0}) %}
+      {% set total = s.pos + s.neu + s.neg %}
+      <div class="stack" style="gap:6px">
+        <div class="spread"><span class="who row" style="gap:6px;font-weight:600"><span class="swatch {{ key }}"></span>{{ name }}</span>
+          <span class="muted num" style="font-size:13px">{% if total %}{{ (s.pos / total * 100)|round|int }}% positive · {{ (s.neg / total * 100)|round|int }}% negative{% else %}no tagged posts{% endif %}</span></div>
+        {{ splitbar(s) }}
+      </div>
+    {% endfor %}
+    <div class="legend"><span><span class="dot pos"></span>Positive</span><span><span class="dot neu"></span>Neutral</span><span><span class="dot neg"></span>Negative</span></div>
+
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px" class="stack">
+      <div class="spread"><h3>Reaction to the MP</h3><span class="muted num" style="font-size:13px">{{ p.mentions_count }} mentions of @{{ p.mp_handle }}</span></div>
+      {{ splitbar(p.mentions_split) }}
+      {% set ms = p.mentions_split %}{% set mt = ms.pos + ms.neu + ms.neg %}
+      <p class="muted num" style="font-size:13px">{% if mt %}{{ ms.pos }} positive · {{ ms.neu }} neutral · {{ ms.neg }} negative{% else %}No mentions in this window.{% endif %}</p>
+    </div>
+  </section>
+</div>
+
+<section class="section" aria-labelledby="atk">
+  <div class="section-head"><h2 id="atk">What YSRCP is attacking TDP on</h2><span class="hint">Issues in anti-TDP posts from YSRCP accounts, by engagement</span></div>
+  {% if p.attacks %}
+    <div class="grid grid-2">
+      {% for a in p.attacks %}
+        <article class="card attack">
+          <div class="spread"><h3>{{ a.issue|label }}</h3><span class="muted num" style="font-size:13px">{{ a.posts }} post{{ "s" if a.posts != 1 }} · {{ a.engagement|compact }} engagement</span></div>
+          {% for e in a.examples %}
+            <div style="border-top:1px solid var(--border);padding-top:8px">
+              <p style="font-weight:600;font-size:14px">{{ e.summary_en or e.text }}</p>
+              <p class="muted" style="font-size:12.5px">@{{ e.author_username }} · {{ e.created_at|ago }} · <a href="https://x.com/i/status/{{ e.id }}" target="_blank" rel="noopener">Open on X ↗</a></p>
+            </div>
+          {% endfor %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">No anti-TDP posts from YSRCP accounts in this window.</div>
+  {% endif %}
+</section>
+
+<div class="grid grid-2 section">
+  <section aria-labelledby="ttdp">
+    <div class="section-head"><h2 id="ttdp"><span class="swatch tdp"></span> Top TDP posts</h2></div>
+    <div class="feed">{% for post in p.top_tdp %}{{ post_card(post, compact=True, show_place=False, show_stance=True) }}{% else %}<div class="empty">No TDP posts in this window.</div>{% endfor %}</div>
+  </section>
+  <section aria-labelledby="tysr">
+    <div class="section-head"><h2 id="tysr"><span class="swatch ysrcp"></span> Top YSRCP posts</h2></div>
+    <div class="feed">{% for post in p.top_ysrcp %}{{ post_card(post, compact=True, show_place=False, show_stance=True) }}{% else %}<div class="empty">No YSRCP posts in this window.</div>{% endfor %}</div>
+  </section>
+</div>
+
+<section class="section" aria-labelledby="mp">
+  <div class="section-head"><h2 id="mp">What people are telling the MP</h2><span class="hint">Mentions of @{{ p.mp_handle }}, most active first</span></div>
+  <div class="feed">{% for post in p.mentions %}{{ post_card(post, compact=True) }}{% else %}<div class="empty">No mentions in this window.</div>{% endfor %}</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  var DATA = {{ p.chart|tojson }};
+  var chart;
+  function draw() {
+    if (!window.Chart) return setTimeout(draw, 50);
+    if (chart) chart.destroy();
+    var text = cssVar("--muted"), grid = cssVar("--border");
+    chart = new Chart(document.getElementById("sovChart"), {
+      type: "line",
+      data: { labels: DATA.labels, datasets: [
+        { label: "TDP", data: DATA.tdp, borderColor: DATA.tdp_color, backgroundColor: DATA.tdp_color, tension: .3, pointRadius: 0, borderWidth: 2.5 },
+        { label: "YSRCP", data: DATA.ysrcp, borderColor: DATA.ysrcp_color, backgroundColor: DATA.ysrcp_color, tension: .3, pointRadius: 0, borderWidth: 2.5 }
+      ]},
+      options: { maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { color: text, maxRotation: 0, autoSkipPadding: 14 }, grid: { display: false } },
+                  y: { beginAtZero: true, ticks: { color: text, precision: 0 }, grid: { color: grid } } } }
+    });
+  }
+  document.addEventListener("DOMContentLoaded", draw);
+  document.addEventListener("themechange", draw);
+</script>
+{% endblock %}

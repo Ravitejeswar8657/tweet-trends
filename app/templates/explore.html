@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon, post_card %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Explore</h1>
+    <p class="lede">Search recent posts (last 7 days) or look up posts by ID or link. You see the cost before anything is fetched.</p>
+  </div>
+</header>
+
+<form method="get" action="/explore" class="card stack">
+  <label for="q" style="font-weight:600">Search query, post ID, or x.com link</label>
+  <div class="search-row">
+    <input id="q" type="search" name="q" value="{{ q }}" placeholder='e.g. Varikapudisela OR వరికపూడిశెల -is:retweet' autocomplete="off">
+    <button class="btn" type="submit">{{ icon("search") }}Check cost</button>
+  </div>
+  <p class="muted" style="font-size:13px">Uses X search syntax: <code>OR</code>, <code>"exact phrase"</code>, <code>from:handle</code>, <code>-is:retweet</code>, <code>lang:te</code>.</p>
+</form>
+
+{% if estimate %}
+  <div class="card estimate section" style="margin-top:14px">
+    <div>
+      <div style="font-weight:650">
+        {% if estimate.kind == "ids" %}Look up {{ estimate.posts }} post{{ "s" if estimate.posts != 1 }}{% else %}Search for up to {{ estimate.posts }} posts{% endif %}
+        · about {{ estimate.cost|money }}
+      </div>
+      <div class="muted" style="font-size:13px">{% if estimate.ok %}Charged per post actually returned. Results are tagged automatically.{% else %}{{ estimate.reason }}{% endif %}</div>
+    </div>
+    {% if estimate.ok %}
+      <form method="post" action="/explore" class="inline">
+        <input type="hidden" name="q" value="{{ q }}">
+        <button class="btn btn-primary" type="submit">Run search</button>
+      </form>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if results %}
+  <section class="section" aria-labelledby="res">
+    <div class="section-head"><h2 id="res">{{ results.posts|length }} result{{ "s" if results.posts|length != 1 }}</h2><span class="hint">“{{ results.query }}” · {{ results.at|ago }}</span></div>
+    <div class="feed">{% for post in results.posts %}{{ post_card(post) }}{% else %}<div class="empty">No posts matched.</div>{% endfor %}</div>
+  </section>
+{% endif %}
+
+{% if recent %}
+  <section class="section" aria-labelledby="rec">
+    <div class="section-head"><h2 id="rec">Recent searches</h2><span class="hint">Re-open without spending credits</span></div>
+    <div class="chips">
+      {% for run_id, info in recent %}<a class="chip" href="/explore?{{ qs(q=info.query, run=run_id) }}">{{ info.query[:40] }} <span class="n">{{ info.ids|length }}</span></a>{% endfor %}
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

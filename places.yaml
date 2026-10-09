@@ -1,0 +1,62 @@
+# Geography of Narasaraopet Lok Sabha (Palnadu district).
+# Check the mandal-to-AC mapping and spellings against the district gazette.
+
+district:
+  name: Palnadu
+  aliases: [Palnadu, Palnad, పల్నాడు]
+lok_sabha:
+  name: Narasaraopet
+  aliases: [Narasaraopet, Narasaraopeta, NRT, నరసరావుపేట]
+
+# ambiguous: true -> the name has other common meanings (a person, the AP capital,
+# a town in another state). Count it only when another Palnadu term is in the same post.
+assembly_constituencies:
+  - name: Pedakurapadu
+    aliases: [Pedakurapadu, పెదకూరపాడు]
+    mandals:
+      - {name: Pedakurapadu, aliases: [Pedakurapadu, పెదకూరపాడు]}
+      - {name: Bellamkonda,  aliases: [Bellamkonda, బెల్లంకొండ], ambiguous: true}
+      - {name: Atchampet,    aliases: [Atchampet, Achampet, అచ్చంపేట], ambiguous: true}
+      - {name: Krosuru,      aliases: [Krosuru, Krosur, క్రోసూరు]}
+      - {name: Amaravathi,   aliases: [Amaravathi, Amaravati, అమరావతి], ambiguous: true}
+  - name: Chilakaluripet
+    aliases: [Chilakaluripet, Chilakaluripeta, చిలకలూరిపేట]
+    mandals:
+      - {name: Chilakaluripet, aliases: [Chilakaluripet, చిలకలూరిపేట]}
+      - {name: Nadendla,       aliases: [Nadendla, నాదెండ్ల], ambiguous: true}
+      - {name: Edlapadu,       aliases: [Edlapadu, Yadlapadu, యడ్లపాడు]}
+  - name: Narasaraopet
+    aliases: [Narasaraopet, Narasaraopeta, నరసరావుపేట]
+    mandals:
+      - {name: Narasaraopet, aliases: [Narasaraopet, నరసరావుపేట]}
+      - {name: Rompicherla,  aliases: [Rompicherla, రొంపిచర్ల]}
+  - name: Sattenapalle
+    aliases: [Sattenapalle, Sattenapalli, సత్తెనపల్లి]
+    mandals:
+      - {name: Sattenapalle, aliases: [Sattenapalle, Sattenapalli, సత్తెనపల్లి]}
+      - {name: Rajupalem,    aliases: [Rajupalem, రాజుపాలెం], ambiguous: true}
+      - {name: Muppalla,     aliases: [Muppalla, ముప్పాళ్ల]}
+      - {name: Nekarikallu,  aliases: [Nekarikallu, Nakarikallu, నకరికల్లు]}
+  - name: Vinukonda
+    aliases: [Vinukonda, వినుకొండ]
+    mandals:
+      - {name: Vinukonda,    aliases: [Vinukonda, వినుకొండ]}
+      - {name: Nuzendla,     aliases: [Nuzendla, నూజెండ్ల]}
+      - {name: Savalyapuram, aliases: [Savalyapuram, శావల్యాపురం]}
+      - {name: Ipur,         aliases: [Ipur, Ipuru, ఈపూరు]}
+      - {name: Bollapalle,   aliases: [Bollapalle, Bollapalli, బొల్లాపల్లి]}
+  - name: Gurajala
+    aliases: [Gurajala, Gurazala, గురజాల]
+    mandals:
+      - {name: Gurajala,    aliases: [Gurajala, Gurazala, గురజాల]}
+      - {name: Piduguralla, aliases: [Piduguralla, పిడుగురాళ్ల]}
+      - {name: Dachepalle,  aliases: [Dachepalle, Dachepalli, దాచేపల్లి]}
+      - {name: Machavaram,  aliases: [Machavaram, మాచవరం], ambiguous: true}
+  - name: Macherla
+    aliases: [Macherla, మాచర్ల]
+    mandals:
+      - {name: Macherla,      aliases: [Macherla, మాచర్ల]}
+      - {name: Veldurthi,     aliases: [Veldurthi, Veldurti, వెల్దుర్తి], ambiguous: true}
+      - {name: Durgi,         aliases: [Durgi, దుర్గి]}
+      - {name: Rentachintala, aliases: [Rentachintala, రెంటచింతల]}
+      - {name: Karempudi,     aliases: [Karempudi, Karampudi, కారంపూడి]}

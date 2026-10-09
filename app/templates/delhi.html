@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% from "_ui.html" import post_card, window_filter, refresh_button, sparkline %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>What's moving in Delhi for Andhra Pradesh?</h1>
+    <p class="lede">The PM and Union ministries (only their posts about AP), Parliament, the state government's dealings with the Centre, and national trends.</p>
+  </div>
+  <div class="page-meta"><span>Updated {{ updated|ago }}</span>{{ refresh_button("delhi") }}</div>
+</header>
+
+<div class="filters">{{ window_filter("/delhi", window, {"topic": d.topic, "account": d.account, "kw": d.active_kw}) }}</div>
+
+<section aria-labelledby="c2ap">
+  <div class="section-head"><h2 id="c2ap">Centre → AP</h2><span class="hint">AP-related posts from the PM, PMO and Union ministries</span></div>
+  <div class="stack" style="margin-bottom:12px">
+    <div class="chips">
+      <a class="chip" href="/delhi?{{ qs(window=window, account=d.account) }}" aria-current="{{ 'true' if not d.topic else 'false' }}">All topics</a>
+      {% for t in d.digest.topics %}
+        <a class="chip" href="/delhi?{{ qs(window=window, topic=t.topic, account=d.account) }}" aria-current="{{ 'true' if d.topic == t.topic else 'false' }}">{{ t.topic|label }} <span class="n">{{ t.count }}</span></a>
+      {% endfor %}
+    </div>
+    {% if d.digest.accounts %}
+      <form method="get" action="/delhi" class="row">
+        <input type="hidden" name="window" value="{{ window }}">{% if d.topic %}<input type="hidden" name="topic" value="{{ d.topic }}">{% endif %}
+        <label for="acct" class="muted" style="font-size:13px">Account</label>
+        <select id="acct" name="account" onchange="this.form.submit()">
+          <option value="">All accounts</option>
+          {% for name, n in d.digest.accounts %}<option value="{{ name }}"{% if d.account and d.account|lower == name|lower %} selected{% endif %}>@{{ name }} ({{ n }})</option>{% endfor %}
+        </select>
+        <noscript><button class="btn" type="submit">Filter</button></noscript>
+      </form>
+    {% endif %}
+  </div>
+  <div class="feed">
+    {% for post in d.national %}{{ post_card(post, compact=True, show_place=False) }}{% else %}<div class="empty">No AP-related posts from the Union government in this window.</div>{% endfor %}
+  </div>
+</section>
+
+<div class="grid grid-2 section">
+  <section aria-labelledby="parl">
+    <div class="section-head"><h2 id="parl">Parliament</h2><span class="hint">Lok Sabha, Speaker, Parliamentary Affairs, Sansad TV, TDP Union ministers</span></div>
+    <div class="feed">{% for post in d.parliament %}{{ post_card(post, compact=True, show_place=False) }}{% else %}<div class="empty">No Parliament posts in this window.</div>{% endfor %}</div>
+  </section>
+  <section aria-labelledby="ap2c">
+    <div class="section-head"><h2 id="ap2c">AP ↔ Centre</h2><span class="hint">CMO AP and TDP posts that mention the Centre</span></div>
+    <div class="feed">{% for post in d.centre_link %}{{ post_card(post, compact=True, show_place=False) }}{% else %}<div class="empty">No state posts about the Centre in this window.</div>{% endfor %}</div>
+  </section>
+</div>
+
+{% if d.keywords %}
+<section class="section" aria-labelledby="kw">
+  <div class="section-head"><h2 id="kw">AP in Delhi: topics</h2></div>
+  <nav class="tabs" aria-label="Topics">
+    {% for k in d.keywords %}
+      <a href="/delhi?{{ qs(window=window, topic=d.topic, account=d.account, kw=k.key) }}#kw" aria-current="{{ 'true' if k.key == d.active_kw else 'false' }}">{{ k.name }} <span class="faint">{{ k.posts|length }}</span></a>
+    {% endfor %}
+  </nav>
+  {% for k in d.keywords if k.key == d.active_kw %}
+    <div class="feed">{% for post in k.posts[:20] %}{{ post_card(post, compact=True, show_place=False) }}{% else %}<div class="empty">No posts for "{{ k.name }}" in this window.</div>{% endfor %}</div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="section" id="trends" aria-labelledby="trh">
+  <div class="section-head"><h2 id="trh">National trends</h2><span class="hint">Compared with the previous check. The line shows rank over the last checks.</span></div>
+  <div class="grid grid-2">
+    {% for loc in d.trends %}
+      <div class="card">
+        <div class="spread" style="margin-bottom:4px"><h3>{{ loc.location }}</h3><span class="muted" style="font-size:12.5px">{{ loc.fetched_at|ago }}</span></div>
+        {% for t in loc.trends %}
+          <div class="trend-row">
+            <span class="rank">{{ t.rank }}</span>
+            <span class="name">{{ t.name }}{% if t.tweet_count %} <span class="faint num" style="font-weight:400;font-size:12px">{{ t.tweet_count|compact }}</span>{% endif %}</span>
+            <span class="tbadge {{ t.status }}">{{ {"NEW": "NEW", "RISING": "▲ Rising", "FALLING": "▼", "STEADY": ""}[t.status] }}</span>
+            {{ sparkline(t.history) }}
+          </div>
+        {% else %}
+          <p class="muted" style="font-size:14px">No trend data yet.</p>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

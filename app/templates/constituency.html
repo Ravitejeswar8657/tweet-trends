@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon, splitbar, window_filter, refresh_button %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>What's happening in the constituency, and where?</h1>
+    <p class="lede">{{ c.total }} local posts across the 7 assembly constituencies{% if c.unplaced %} ({{ c.unplaced }} mention the district without a specific place){% endif %}.</p>
+  </div>
+  <div class="page-meta"><span>Updated {{ updated|ago }}</span>{{ refresh_button("local") }}</div>
+</header>
+
+<div class="filters">{{ window_filter("/constituency", window) }}</div>
+
+<section aria-labelledby="acs">
+  <h2 id="acs" class="sr-only">Assembly constituencies</h2>
+  <div class="grid grid-auto">
+    {% for a in c.cards %}
+      <a class="card card-link ac-card" href="/place?{{ qs(ac=a.name, window=window) }}">
+        <div class="spread">
+          <div><div class="ac-name">{{ a.name }}</div><div class="ac-te" lang="te">{{ a.telugu }}</div></div>
+          {% if a.level %}<span class="level {{ a.level }}">{{ "Urgent" if a.level == "red" else "Watch" }}</span>{% endif %}
+        </div>
+        <div class="spread">
+          <span class="big">{{ a.count }}</span>
+          <span class="muted" style="font-size:13px">{{ "post" if a.count == 1 else "posts" }}</span>
+        </div>
+        {{ splitbar(a.split) }}
+        <div class="muted" style="font-size:13px">
+          {% if a.top_issue %}Top issue: <strong style="color:var(--text)">{{ a.top_issue|label }}</strong>{% else %}No clear issue yet{% endif %}
+        </div>
+      </a>
+    {% endfor %}
+  </div>
+  <div class="legend" style="margin-top:10px">
+    <span><span class="dot pos"></span>Positive</span><span><span class="dot neu"></span>Neutral</span><span><span class="dot neg"></span>Negative</span>
+  </div>
+</section>
+
+<section class="section" aria-labelledby="heat">
+  <div class="section-head">
+    <h2 id="heat">Issues by constituency</h2>
+    <span class="hint">Darker = more posts. Red outline = 3+ posts, mostly negative. Tap a cell for the posts.</span>
+  </div>
+  <div class="card scroll-x">
+    <table class="heatmap">
+      <thead><tr><th></th>{% for i in c.heat.issues %}<th scope="col">{{ i|label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for ac in c.heat.acs %}
+          <tr>
+            <th scope="row">{{ ac }}</th>
+            {% for i in c.heat.issues %}
+              {% set cell = c.heat.cells[ac][i] %}
+              <td><a href="/place?{{ qs(ac=ac, issue=i, window=window) }}" style="--i: {{ cell.intensity|round(3) }}"
+                     class="{{ 'zero' if not cell.count }}{{ ' dark' if cell.intensity > 0.55 }}{{ ' hot' if cell.count >= 3 and cell.neg_share > 0.5 }}"
+                     aria-label="{{ ac }}, {{ i|label }}: {{ cell.count }} posts, {{ (cell.neg_share * 100)|round|int }}% negative">{{ cell.count if cell.count else "·" }}</a></td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

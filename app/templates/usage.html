@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon, refresh_button %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Usage & status</h1>
+    <p class="lede">What the tracker has spent, what it is doing, and anything that needs fixing.</p>
+  </div>
+  <div class="page-meta">
+    {% if mock %}<span class="badge-mock">Mock mode: no real credits used</span>{% endif %}
+    {% if u.paused %}
+      <form class="inline" method="post" action="/resume"><button class="btn btn-primary" type="submit">{{ icon("play") }}Resume all</button></form>
+    {% else %}
+      <form class="inline" method="post" action="/pause"><button class="btn btn-danger" type="submit">{{ icon("pause") }}Pause all</button></form>
+    {% endif %}
+  </div>
+</header>
+
+{% set st = u.status %}
+<div class="grid grid-3">
+  <section class="card stack" aria-labelledby="today">
+    <div class="spread"><h2 id="today">Today (X credits)</h2><span class="muted num" style="font-size:13px">{{ u.posts_today }} posts read</span></div>
+    <div class="k-value num" style="font-size:28px;font-weight:700">{{ st.today|money }} <span class="muted" style="font-size:14px;font-weight:500">of {{ st.daily_limit|money }}</span></div>
+    <div class="meter {{ 'over' if st.today_share >= 1 else 'warn' if st.today_share >= cfg.budget.soft_limit_share }}"><span style="width: {{ [st.today_share * 100, 100]|min|round(1) }}%"></span></div>
+    <p class="muted" style="font-size:13px">At {{ (cfg.budget.soft_limit_share * 100)|int }}% only local, MP mentions and Parliament keep updating. At 100% everything pauses until midnight IST.</p>
+  </section>
+  <section class="card stack" aria-labelledby="month">
+    <h2 id="month">This month (X credits)</h2>
+    <div class="k-value num" style="font-size:28px;font-weight:700">{{ st.month|money }} <span class="muted" style="font-size:14px;font-weight:500">of {{ st.monthly_limit|money }}</span></div>
+    <div class="meter {{ 'over' if st.month_share >= 1 else 'warn' if st.month_share >= 0.8 }}"><span style="width: {{ [st.month_share * 100, 100]|min|round(1) }}%"></span></div>
+    <p class="muted" style="font-size:13px">Estimate at ${{ cfg.budget.cost_per_post_read }}/post. The X developer console is the source of truth.</p>
+  </section>
+  <section class="card stack" aria-labelledby="llm">
+    <h2 id="llm">LLM tagging (this month)</h2>
+    <div class="k-value num" style="font-size:28px;font-weight:700">{{ u.llm_month|money }}</div>
+    <p class="muted num" style="font-size:13px">{{ u.llm_tokens|compact }} tokens · {{ u.pending }} posts waiting · {{ u.failed }} failed</p>
+  </section>
+</div>
+
+<section class="section card" aria-labelledby="where">
+  <div class="section-head"><h2 id="where">Where the money goes</h2></div>
+  <table class="table">
+    <thead><tr><th>Stream</th><th class="r">Today</th><th class="r">This month</th></tr></thead>
+    <tbody>
+      {% for g in ["Local", "Party", "Delhi", "Explore", "LLM tagging"] %}
+        <tr><td>{{ g }}</td><td class="r num">{{ (u.by_group_today.get(g, 0))|money }}</td><td class="r num">{{ (u.by_group_month.get(g, 0))|money }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="section card" aria-labelledby="jobs">
+  <div class="section-head"><h2 id="jobs">Jobs</h2><span class="hint">Jobs check every {{ cfg.polling.burst_minutes }} min; each search runs only when it is due</span></div>
+  <div class="scroll-x">
+    <table class="table">
+      <thead><tr><th>Job</th><th>Last run</th><th>Result</th><th>Next check</th><th></th></tr></thead>
+      <tbody>
+        {% for j in u.jobs %}
+          <tr>
+            <td style="font-weight:600">{{ j.label }}</td>
+            <td>{{ j.last[0]|ago if j.last else "not yet" }}</td>
+            <td>{% if j.error %}<span class="sent"><span class="dot red"></span>{{ j.error[1] }}</span>{% else %}<span class="muted">{{ j.last[1] if j.last else "" }}</span>{% endif %}</td>
+            <td>{{ (j.next|naive_utc)|ago if j.next else "–" }}</td>
+            <td class="r">{{ refresh_button(j.name, "Run") }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if u.truncated %}
+<section class="section card" aria-labelledby="trunc">
+  <div class="section-head"><h2 id="trunc">Possibly truncated</h2><span class="hint">Polls that came back full ({{ cfg.polling.max_results }} posts), so some posts may have been skipped</span></div>
+  <table class="table">
+    <thead><tr><th>Search</th><th class="r">Full polls</th><th class="r">Now polling every</th></tr></thead>
+    <tbody>{% for s in u.truncated %}<tr><td>{{ s.key }}</td><td class="r num">{{ s.truncated_runs }}</td><td class="r num">{{ s.interval_minutes }} min</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endif %}
+
+<section class="section card">
+  <details>
+    <summary>All searches ({{ u.states|length }})</summary>
+    <div class="scroll-x" style="margin-top:10px">
+      <table class="table">
+        <thead><tr><th>Search</th><th class="r">Every</th><th class="r">Last count</th><th>Last run</th></tr></thead>
+        <tbody>
+          {% for s in u.states %}
+            <tr><td>{{ s.key }}</td><td class="r num">{{ s.interval_minutes }} min</td><td class="r num">{{ s.last_new_count }}</td><td>{{ s.last_run_at|ago }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </details>
+</section>
+{% endblock %}

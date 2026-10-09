@@ -1,0 +1,15 @@
+services:
+  tracker:
+    build: .
+    env_file: .env
+    environment:
+      TZ: Asia/Kolkata
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - tracker-data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+      - ./places.yaml:/app/places.yaml:ro
+    restart: unless-stopped
+volumes:
+  tracker-data:
