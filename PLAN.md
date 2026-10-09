@@ -244,7 +244,7 @@ parties:
     #   Chadalavada Aravinda Babu (MLA Narasaraopet), Kanna Lakshmi Narayana (MLA Sattenapalle),
     #   G. V. Anjaneyulu (MLA Vinukonda), Julakanti Brahmananda Reddy (MLA Macherla),
     #   Bhashyam Praveen (Pedakurapadu; confirm he is the sitting MLA)
-    keywords: ["#TDP", "తెలుగుదేశం"]
+    keywords: []   # Cost cut: party-wide hashtag/keyword streams (#TDP, తెలుగుదేశం) dropped; accounts only
   ysrcp:
     label: YSRCP
     color: "#1F6FD1"
@@ -256,7 +256,7 @@ parties:
     #   Gopireddy Srinivasa Reddy (Narasaraopet), Ambati Rambabu (Sattenapalle),
     #   Kasu Mahesh Reddy (Gurajala), Pinnelli Ramakrishna Reddy (Macherla),
     #   Bolla Brahma Naidu (Vinukonda), Namburu Sankara Rao (Pedakurapadu)
-    keywords: ["#YSRCP", "వైఎస్సార్సీపీ"]
+    keywords: []   # Cost cut: #YSRCP, వైఎస్సార్సీపీ dropped; accounts only
 
 delhi:
   # Group 1: Parliament. Fetched in full (the floor leader needs all House business).
@@ -371,17 +371,21 @@ issues:              # fixed categories the tagger must choose from
   - other
 
 polling:             # base minutes; 0 disables. Adaptive backoff can stretch these.
-  local_minutes: 30
-  party_minutes: 30
+  local_minutes: 60           # cost cut: was 30
+  party_minutes: 60           # cost cut: was 30
+  burst_minutes: 30           # a query whose last poll came back full drops to this until it calms down
   delhi_minutes: 60
   trends_minutes: 120
   tag_minutes: 5
+  quiet_hours: "23:00-06:00"  # IST; every interval is doubled in this window
   max_backoff_factor: 4
-  max_results: 20             # per request, 10-100
+  max_results: 20             # per request, 10-100. Scheduled polls fetch one page only
 
 budget:
-  daily_credit_limit: 5.00     # USD; ~1,000 post reads/day. Jobs pause when reached
-  monthly_credit_limit: 150.00
+  daily_credit_limit: 3.00     # USD; cost cut (was 5.00) = ~600 post reads/day
+  monthly_credit_limit: 90.00   # cost cut (was 150.00)
+  soft_limit_share: 0.8         # above 80% of the daily limit, only priority-1 streams keep running
+  priority_1: [local, mp_mentions, parliament]   # the rest (party, ministries, Delhi keywords, trends) pause first
   # Published pay-per-use rates as of Oct 2026 (USD). Confirm in the X developer console.
   cost_per_post_read: 0.005    # per post returned (search, timeline)
   cost_per_user_lookup: 0.010  # per user returned. Check whether expansions=author_id is billed this way
@@ -442,18 +446,23 @@ Index `Post` on (category, created_at) and (ac, issue, created_at).
 Pay-per-use means **every post read costs money**. The app treats the budget as a hard limit.
 
 - `spent_today()` and `spent_this_month()` sum `CreditLedger.cost`. Days and months are in IST.
-- `can_spend(estimate)`: every job calls this before making a request. If the spend would cross the daily or monthly limit, the job skips the run and records "Paused: daily budget reached". The UI shows this as a banner.
+- `can_spend(estimate, stream)`: every job calls this before making a request. It works in two steps:
+  - **Soft limit:** once today's spend passes `soft_limit_share` of the daily limit, only `priority_1` streams (local, MP mentions, Parliament) keep running. The UI shows "Saving budget: only local, MP and Parliament are updating".
+  - **Hard limit:** at the daily or monthly limit everything pauses with "Paused: daily budget reached". It resumes at midnight IST.
+  - Result: on a heavy day, the constituency feed is the last thing to stop.
 - `estimate_cost(max_results)`: used by Explore to show the price before running.
 - Ways the app saves credits:
   1. **`since_id` on every query** (stored in `QueryState`), so it never pays twice for a post it has already seen.
   2. **Small pages:** `max_results` defaults to 20.
-  3. **Priority tiers:** local and party queries poll every 30 minutes, Delhi every 60, trends every 120.
-  4. **Adaptive polling:** after 2 empty runs, the interval doubles, up to `max_backoff_factor` times the base. Any new posts reset it to the base interval.
-  5. **Batch handles:** one search with `from:a OR from:b OR …` per party, not one timeline call per handle.
-  6. **Ambiguous names stay out of the X query.** They are only used for matching posts that are already fetched.
-  7. **The AP filter runs on X's side.** The PM and Union ministry accounts post hundreds of times a day, almost all about other states. Adding `ap_filter` to their query means X returns only AP-related posts, so the rest are never downloaded or paid for.
-  8. **No double-fetching.** CMO AP and JaiTDP are fetched once by the party job. The Delhi page reuses those posts with a local `centre_filter`, at no extra cost.
-  9. A **Pause all** switch on the Usage page.
+  3. **Hourly polling:** local, party and Delhi queries poll every 60 minutes and trends every 120. Every interval doubles during `quiet_hours` (23:00–06:00 IST).
+  4. **Adaptive polling:** after 2 empty runs, the interval doubles, up to `max_backoff_factor` times the base. A poll that comes back full (`max_results` posts, so more may be waiting) switches that query to `burst_minutes` (30) until a poll comes back under half full. Busy topics get covered and quiet ones cost almost nothing.
+  5. **One page per poll:** scheduled polls never paginate. If a poll comes back full, the Usage page counts it as "possibly truncated", so staff can see when the cap hides posts.
+  6. **Accounts, not hashtags:** the party streams follow accounts only. Hashtag streams like `#TDP` and `#YSRCP` are too high-volume for the budget, and the local search already catches party talk about the constituency.
+  7. **Batch handles:** one search with `from:a OR from:b OR …` per party, not one timeline call per handle.
+  8. **Ambiguous names stay out of the X query.** They are only used for matching posts that are already fetched.
+  9. **The AP filter runs on X's side.** The PM and Union ministry accounts post hundreds of times a day, almost all about other states. Adding `ap_filter` to their query means X returns only AP-related posts, so the rest are never downloaded or paid for.
+  10. **No double-fetching.** CMO AP and JaiTDP are fetched once by the party job. The Delhi page reuses those posts with a local `centre_filter`, at no extra cost.
+  11. A **Pause all** switch on the Usage page.
 
 ---
 
@@ -522,7 +531,7 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
   - `trends`
   - `tag` (tags pending posts)
 - Intervals come from `polling.*`, and a job is skipped when its interval is 0. `next_run_time=now` makes each job run once at startup.
-- Adaptive polling: the job runs at the base interval, and `collect()` skips any query whose `QueryState.interval_minutes` has not passed since `last_run_at`.
+- Adaptive polling: each job wakes every `burst_minutes` (30). `collect()` skips any query whose current interval (base, burst, backed-off, or doubled in quiet hours) has not passed since `last_run_at`, and any query that `can_spend` refuses for its stream's priority.
 - Each job is wrapped in `run_job(name, fn)`. It catches `XAPIError` and other exceptions, and stores `{name: (time, message)}` in `last_errors`, so pages show "Delhi: 403, your plan does not include this endpoint" instead of crashing. A budget pause is recorded the same way.
 - `max_instances=1, coalesce=True` stops jobs from overlapping.
 
@@ -672,12 +681,12 @@ uvicorn app.main:app --reload
 2. **Data persists:** after `docker compose restart`, the history and charts are still there.
 3. **Needs attention:** within a few mock runs, a red or amber card appears for a mandal, and clicking it opens the Place page filtered to that mandal and issue.
 4. **Phone layout:** at 360px width the bottom tabs show, there is no horizontal scroll, and Telugu renders in Noto Sans Telugu. Dark mode works.
-5. **Budget:** set `daily_credit_limit` very low with non-zero prices in mock mode. Jobs pause, the banner shows, and Pause/Resume works.
+5. **Budget:** set `daily_credit_limit` very low with non-zero prices in mock mode. Past 80% only local, MP mentions and Parliament keep updating (with the "Saving budget" banner). At 100% everything pauses, and Pause/Resume works.
 6. **Unit tests (`pytest`):**
    - `test_places.py`: English, spelling-variant and Telugu matching; ambiguous names (e.g. "Amaravati" alone → no match, "Amaravathi mandal, Palnadu" → match); the AC query builder splits queries over the length limit; `build_handle_queries` packs the 50 national handles + `ap_filter` (≈4 queries at 512 chars) into queries that are all under the limit, with stable keys
    - `test_insights.py`: `centre_link` keeps "కేంద్ర నిధులు…" and drops a CMO post with no Centre term; `needs_attention` thresholds and levels, `share_of_voice` buckets, `attack_lines`, engagement and velocity math
    - `test_tagger.py` (respx on the LLM endpoint): valid JSON → tags; bad JSON → one retry, then `failed`; unknown issue → `other`; no key → FallbackTagger
-   - `test_budget.py`: `can_spend` at and over the limit, IST day boundary, `since_id` passed through, adaptive backoff and reset
+   - `test_budget.py`: `can_spend` at and over the limit, soft limit lets only priority-1 streams through, quiet-hours doubling, burst switch on a full poll and back, IST day boundary, `since_id` passed through, adaptive backoff and reset
    - `test_trends.py`: `compute_deltas` NEW/RISING/FALLING cases
    - `test_x_client.py` (respx): normalisation with the `includes.users` join, `since_id` and `next_token`, 429 retry, 403 and credits-exhausted → readable `XAPIError`
 7. **Live:** with real keys and a small budget, use "Refresh now" on each page. Check that the ledger and Usage page match the X developer console within a day, and that Telugu posts get sensible English gists.
@@ -688,6 +697,7 @@ uvicorn app.main:app --reload
 
 - **No local trends:** X has no WOEID for Palnadu or Narasaraopet. Local visibility depends entirely on the place-name search, so keep `places.yaml` accurate and add common local spellings as staff spot them.
 - **Recent search covers only the last 7 days.**
+- **Expected X cost after the cost cuts:** about 500–700 posts/day, or **$75–90 a month**. The $3/day limit caps the month at $90 regardless. At $0.005 per post, this assumes usernames returned with posts are not billed as user reads; check with a $5 trial day.
 - **Pay-per-use prices and rules change.** Keep the prices in `config.yaml` up to date from the developer console. The app's cost figures are estimates; the console is the source of truth.
 - **Handles must be checked.** The handles in `config.yaml` were found by web search in October 2026. Confirm each on x.com before going live. Five TDP MLAs and six local YSRCP leaders still need handles (listed in comments in `config.yaml`); the office can supply these faster than a web search.
 - **LLM tags are a guide, not a verdict.** Staff should open the original post before acting on it. Keep `temperature=0` and the fixed issue list so tags stay consistent.
