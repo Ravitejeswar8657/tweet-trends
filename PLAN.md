@@ -220,21 +220,52 @@ local:
   extra_terms: ["Palnadu", "పల్నాడు"]
   query_suffix: "-is:retweet"
 
-# Handles are placeholders. The office must fill these in and check them.
+# Handles found by web search (Oct 2026). Confirm each one on x.com (verified badge,
+# bio) before going live. Leaders whose handle could not be found are listed in
+# comments; add them once the office confirms their handles.
+
+mp:
+  handle: SriKrishnaLavu          # Lavu Sri Krishna Devarayalu; bio: "TDP Parliamentary Chairperson", Narasaraopet
+  track_mentions: true            # also search "@SriKrishnaLavu -from:SriKrishnaLavu" (public reaction to the MP)
+
 parties:
   tdp:
     label: TDP
     color: "#F2C200"
-    handles: [JaiTDP, ncbn, naralokesh]     # add the MP's handle and local TDP MLAs
+    handles:
+      - JaiTDP                    # official party account (listed on TDP's own pages)
+      - ncbn                      # N. Chandrababu Naidu, CM and party president
+      - naralokesh                # Nara Lokesh, national general secretary
+      - AndhraPradeshCM           # CMO Andhra Pradesh (government account)
+      - SriKrishnaLavu            # the MP
+      - PullaRaoP_TDP             # Prathipati Pulla Rao, MLA Chilakaluripet
+      - Yarapathineni_S           # Yarapathineni Srinivasa Rao, MLA Gurajala
+    # Handle not found yet. Add after checking on x.com:
+    #   Chadalavada Aravinda Babu (MLA Narasaraopet), Kanna Lakshmi Narayana (MLA Sattenapalle),
+    #   G. V. Anjaneyulu (MLA Vinukonda), Julakanti Brahmananda Reddy (MLA Macherla),
+    #   Bhashyam Praveen (Pedakurapadu; confirm he is the sitting MLA)
     keywords: ["#TDP", "తెలుగుదేశం"]
   ysrcp:
     label: YSRCP
     color: "#1F6FD1"
-    handles: [YSRCParty, ysjagan]           # add local YSRCP leaders
+    handles:
+      - YSRCParty                 # official party account
+      - ysjagan                   # Y. S. Jagan Mohan Reddy, party president
+      - VidadalaRajini            # Vidadala Rajini, ex-minister, Chilakaluripet
+    # Handle not found yet. Add after checking on x.com:
+    #   Gopireddy Srinivasa Reddy (Narasaraopet), Ambati Rambabu (Sattenapalle),
+    #   Kasu Mahesh Reddy (Gurajala), Pinnelli Ramakrishna Reddy (Macherla),
+    #   Bolla Brahma Naidu (Vinukonda), Namburu Sankara Rao (Pedakurapadu)
     keywords: ["#YSRCP", "వైఎస్సార్సీపీ"]
 
 delhi:
-  handles: []        # Lok Sabha Secretariat, Sansad TV, PIB, key ministries: fill in and check
+  handles:
+    - LokSabhaSectt               # Lok Sabha Secretariat
+    - sansad_tv                   # Sansad TV (listed on sansadtv.nic.in)
+    - ombirlakota                 # Om Birla, Speaker, 18th Lok Sabha
+    - mpa_india                   # Ministry of Parliamentary Affairs
+    - PIB_India                   # Press Information Bureau
+    - PMOIndia                    # Prime Minister's Office
   keywords:
     - {name: AP in Parliament, query: '("Andhra Pradesh" OR AP) (Lok Sabha OR Parliament) -is:retweet'}
     - {name: Polavaram,        query: 'Polavaram -is:retweet'}
@@ -293,7 +324,7 @@ alerts:
 
 | Table | Fields |
 |---|---|
-| `Post` | id (tweet ID, PK), author_id, author_username, text, lang, created_at, likes, retweets, replies, quotes, impressions, conversation_id, **category** (`local` / `tdp` / `ysrcp` / `delhi` / `explore`), **source** (query key), fetched_at. Tag fields: **ac**, **mandal**, **issue**, **sentiment** (`pos`/`neu`/`neg`), **party_stance** (`pro_tdp`/`anti_tdp`/`pro_ysrcp`/`anti_ysrcp`/`neutral`), **urgency** (0–3), **summary_en**, **tag_status** (`pending`/`done`/`failed`), tagged_at |
+| `Post` | id (tweet ID, PK), author_id, author_username, text, lang, created_at, likes, retweets, replies, quotes, impressions, conversation_id, **category** (`local` / `tdp` / `ysrcp` / `mp_mentions` / `delhi` / `explore`), **source** (query key), fetched_at. Tag fields: **ac**, **mandal**, **issue**, **sentiment** (`pos`/`neu`/`neg`), **party_stance** (`pro_tdp`/`anti_tdp`/`pro_ysrcp`/`anti_ysrcp`/`neutral`), **urgency** (0–3), **summary_en**, **tag_status** (`pending`/`done`/`failed`), tagged_at |
 | `MetricSnapshot` | id, post_id (index), likes, retweets, replies, quotes, at. Used for party posts' engagement growth. |
 | `TrendSnapshot` | id, woeid (index), location, name, rank, tweet_count (nullable), fetched_at (index) |
 | `QueryState` | key (PK), since_id, interval_minutes, empty_runs, last_new_count, last_run_at. Drives `since_id` and adaptive polling. |
@@ -434,7 +465,7 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
 | `GET /` | **Today**: *What needs attention right now?* | 1. **Needs attention** cards (red/amber stripe, `Macherla › Durgi`, "Drinking water", "12 negative posts · 3× usual", 1-line gist, *View posts*). Empty state: "Nothing urgent in the last 6 hours ✓". 2. **4 KPI tiles**: local mentions (24h, change vs yesterday); TDP vs YSRCP share of voice; local negative %; credits spent today / limit. 3. **Delhi strip**: latest 3 Delhi items. 4. **Breaking trends**: NEW/RISING in India and Delhi. The page refreshes via HTMX every 2 minutes. |
 | `GET /constituency` | **Constituency**: *What's happening, and where?* | 1. A grid of **7 AC cards** (post volume, a pos/neu/neg bar, top issue, a red/amber dot if any alert). 2. An **AC × issue heatmap** (colour = volume, red outline = negative share above 50%). Clicking a cell opens that AC and issue. |
 | `GET /place?ac=&mandal=&issue=` | **Place drill-down** | Breadcrumb `Constituency › Macherla › Durgi`. Mandal chips with counts. Issue chips. A volume-by-hour chart. A post feed sorted by velocity. |
-| `GET /party` | **Party Pulse**: *How are TDP and YSRCP doing?* | 1. A **share-of-voice** line chart (TDP yellow, YSRCP blue). 2. A **sentiment by party** split bar. 3. **YSRCP attack lines**: issue, engagement, and 2 example posts, so staff see what needs a response. 4. **Top TDP posts** and **top YSRCP posts** by velocity, side by side on desktop and stacked on a phone. |
+| `GET /party` | **Party Pulse**: *How are TDP and YSRCP doing?* | 1. A **share-of-voice** line chart (TDP yellow, YSRCP blue). 2. A **sentiment by party** split bar. 3. **YSRCP attack lines**: issue, engagement, and 2 example posts, so staff see what needs a response. 4. **Top TDP posts** and **top YSRCP posts** by velocity, side by side on desktop and stacked on a phone. 5. **Reaction to the MP**: sentiment and top replies/mentions of @SriKrishnaLavu. |
 | `GET /delhi` | **Delhi**: *What's moving in Delhi?* | 1. **Parliament and ministries** feed. 2. **AP in Delhi** keyword feeds (Polavaram, Amaravati funds, …) as tabs. 3. **India and Delhi trends** with 🆕 NEW / ▲ RISING / ▼ FALLING badges and a rank-history sparkline. |
 | `GET /explore` | **Explore** | A query or post-ID box. Shows "≈ N posts, ≈ cost X" and a confirm button. Results come back tagged, as post cards. |
 | `GET /usage` | **Usage & status** | Credit and LLM spend today and this month vs the limits (meters). Spend by category (local / party / Delhi / explore). A table of jobs (last run, next run, interval, last error). A Pause/Resume all button. A MOCK MODE badge. |
@@ -571,7 +602,7 @@ uvicorn app.main:app --reload
 - **No local trends:** X has no WOEID for Palnadu or Narasaraopet. Local visibility depends entirely on the place-name search, so keep `places.yaml` accurate and add common local spellings as staff spot them.
 - **Recent search covers only the last 7 days.**
 - **Pay-per-use prices and rules change.** Keep the prices in `config.yaml` up to date from the developer console. The app's cost figures are estimates; the console is the source of truth.
-- **Handles must be checked.** The handles in `config.yaml` are starting points. The office should confirm the MP's own handle, local MLAs, YSRCP local leaders, and official Delhi handles.
+- **Handles must be checked.** The handles in `config.yaml` were found by web search in October 2026. Confirm each on x.com before going live. Five TDP MLAs and six local YSRCP leaders still need handles (listed in comments in `config.yaml`); the office can supply these faster than a web search.
 - **LLM tags are a guide, not a verdict.** Staff should open the original post before acting on it. Keep `temperature=0` and the fixed issue list so tags stay consistent.
 - **Privacy:** the app reads public posts only. Do not export or share individual citizens' posts outside the office.
 - **Future extensions:** a Telegram or WhatsApp digest, a weekly PDF report for the MP, full-archive search, the filtered stream for real-time coverage, and a publishing module (needs OAuth 2.0 user context).
