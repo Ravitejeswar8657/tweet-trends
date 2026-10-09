@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 from typing import Dict, List, Optional, Protocol
 
 import httpx
@@ -25,7 +26,8 @@ log = logging.getLogger("tagger")
 
 SENTIMENTS = {"pos", "neu", "neg"}
 STANCES = {"pro_tdp", "anti_tdp", "pro_ysrcp", "anti_ysrcp", "neutral"}
-BATCH = 20
+BATCH = 10  # smaller batches answer faster and lose less work on a timeout
+_tag_lock = threading.Lock()  # one tagging pass at a time, so posts are never sent twice
 
 
 class Tag(BaseModel):
@@ -165,7 +167,7 @@ class LLMTagger:
     def __init__(self, base_url: str, api_key: str, model: str, http: Optional[httpx.Client] = None):
         self.model = model
         self.http = http or httpx.Client(
-            base_url=base_url.rstrip("/"), headers={"Authorization": f"Bearer {api_key}"}, timeout=90
+            base_url=base_url.rstrip("/"), headers={"Authorization": f"Bearer {api_key}"}, timeout=150
         )
 
     def _call(self, places: Places, posts: List[Post]) -> List[Tag]:
@@ -239,7 +241,16 @@ def apply_tags(posts: List[Post], tags: List[Tag]) -> Dict[str, int]:
 
 
 def tag_pending(tagger: Optional[Tagger] = None, limit: int = 400) -> Dict[str, int]:
-    tagger = tagger or get_tagger()
+    if not _tag_lock.acquire(blocking=False):
+        log.info("Tagging already running; skipping this pass")
+        return {"done": 0, "failed": 0}
+    try:
+        return _tag_pending(tagger or get_tagger(), limit)
+    finally:
+        _tag_lock.release()
+
+
+def _tag_pending(tagger: Tagger, limit: int) -> Dict[str, int]:
     with session() as s:
         pending = list(s.exec(select(Post).where(Post.tag_status == "pending").order_by(Post.fetched_at).limit(limit)))
     totals = {"done": 0, "failed": 0}

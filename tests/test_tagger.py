@@ -111,3 +111,13 @@ def test_llm_tagger_when_key_and_model(monkeypatch):
     monkeypatch.setenv("LLM_MODEL", "m")
     config.get_settings.cache_clear()
     assert isinstance(get_tagger(), LLMTagger)
+
+
+def test_only_one_tagging_pass_at_a_time():
+    make_posts()
+    tagger._tag_lock.acquire()
+    try:
+        assert tag_pending(tagger.MockTagger()) == {"done": 0, "failed": 0}
+    finally:
+        tagger._tag_lock.release()
+    assert tag_pending(tagger.MockTagger())["done"] == 2
