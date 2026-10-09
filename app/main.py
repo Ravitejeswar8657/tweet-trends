@@ -20,7 +20,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
 from sqlmodel import col, select
 
-from app import budget, jobs, views
+from app import budget, jobs, secrets_store, views
 from app.config import get_config, get_places, get_settings
 from app.db import get_engine, init_db, session
 from app.models import Post, utcnow
@@ -43,6 +43,20 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Narasaraopet Pulse", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+
+
+@app.middleware("http")
+async def same_origin_posts(request: Request, call_next):
+    """Browsers resend Basic-auth credentials to this site even from other sites' forms.
+    Reject cross-site POSTs so a malicious page cannot change settings or spend credits."""
+    if request.method == "POST":
+        origin = request.headers.get("origin") or request.headers.get("referer")
+        if origin:
+            from urllib.parse import urlparse
+
+            if urlparse(origin).netloc != request.headers.get("host", ""):
+                return Response("Cross-site request blocked", status_code=403)
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -116,7 +130,7 @@ def render(request: Request, name: str, ctx: dict) -> HTMLResponse:
     base = {
         "request": request,
         "path": request.url.path,
-        "mock": get_settings().mock_mode,
+        "mock": secrets_store.effective().mock_mode,
         "banner": views.banner(),
         "updated": views.freshness(),
         "ac_names": get_places().ac_names(),
@@ -283,3 +297,99 @@ def healthz():
         return JSONResponse({"ok": False, "db": str(e)}, status_code=503)
     sched_ok = get_settings().disable_scheduler or bool(jobs.scheduler and jobs.scheduler.running)
     return JSONResponse({"ok": sched_ok, "db": "ok", "scheduler": sched_ok}, status_code=200 if sched_ok else 503)
+
+
+# ---------- settings (credentials entered in the browser) ----------
+
+LAST_TEST: dict = {}  # "x" / "llm" -> {"ok": bool, "message": str, "at": datetime}
+
+
+@app.get("/settings", response_class=HTMLResponse)
+def page_settings(request: Request, saved: str = ""):
+    eff = secrets_store.effective()
+    host = (request.url.hostname or "").lower()
+    insecure = request.url.scheme != "https" and host not in ("localhost", "127.0.0.1")
+    return render(request, "settings.html", {
+        "title": "Settings", "eff": eff, "masked": {f: secrets_store.mask(getattr(eff, f)) for f in secrets_store.SECRET_FIELDS},
+        "tests": LAST_TEST, "saved": saved, "insecure": insecure, "cfg": get_config(),
+    })
+
+
+@app.post("/settings")
+def save_settings(
+    mode: str = Form("mock"),
+    x_bearer_token: str = Form(""),
+    llm_base_url: str = Form(""),
+    llm_api_key: str = Form(""),
+    llm_model: str = Form(""),
+    clear_x: str = Form(""),
+    clear_llm: str = Form(""),
+):
+    was_mock = secrets_store.effective().mock_mode
+    secrets_store.save(
+        {"mock_mode": "1" if mode == "mock" else "0", "x_bearer_token": x_bearer_token,
+         "llm_base_url": llm_base_url, "llm_api_key": llm_api_key, "llm_model": llm_model},
+        clear=[f for f, flag in (("x_bearer_token", clear_x), ("llm_api_key", clear_llm)) if flag],
+    )
+    went_live = was_mock and mode == "live"
+    if went_live:
+        secrets_store.clear_collected_data()  # sample posts and fake since_ids must not mix with live data
+        LAST_TEST.clear()
+    return RedirectResponse(f"/settings?saved={'live' if went_live else '1'}", status_code=303)
+
+
+@app.post("/settings/test/{what}")
+def test_settings(what: str):
+    from app.x_client import XClient
+
+    eff = secrets_store.effective()
+    try:
+        if what == "x":
+            if not eff.x_bearer_token:
+                raise ValueError("No X Bearer token saved yet.")
+            ok, reason = budget.can_spend("explore", budget.estimate_cost(10))
+            if not ok:
+                raise ValueError(reason)
+            out = XClient(eff.x_bearer_token).search_recent("Narasaraopet -is:retweet", 10, stream="explore")
+            n = len(out["posts"])
+            msg = f"Connected. Found {n} recent post{'s' if n != 1 else ''} mentioning Narasaraopet (cost about {budget.x_cost(n, n):.3f} USD)."
+        elif what == "llm":
+            if not (eff.llm_api_key and eff.llm_model):
+                raise ValueError("Save an OpenCode API key and model first.")
+            import httpx
+
+            r = httpx.post(eff.llm_base_url.rstrip("/") + "/chat/completions", timeout=60,
+                           headers={"Authorization": f"Bearer {eff.llm_api_key}"},
+                           json={"model": eff.llm_model, "temperature": 0, "messages": [{"role": "user", "content":
+                                 "Translate to English, reply with the translation only: దుర్గిలో తాగునీరు రావడం లేదు"}]})
+            if r.status_code >= 400:
+                raise ValueError(f"OpenCode returned {r.status_code}: {r.text[:160]}")
+            answer = r.json()["choices"][0]["message"]["content"].strip()
+            msg = f'Connected. Test translation: "{answer[:140]}"'
+        else:
+            raise HTTPException(404)
+        LAST_TEST[what] = {"ok": True, "message": msg, "at": utcnow()}
+    except XAPIError as e:
+        LAST_TEST[what] = {"ok": False, "message": f"{e.status}: {e.message}", "at": utcnow()}
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001 - show any failure to the user
+        LAST_TEST[what] = {"ok": False, "message": str(e)[:200] or type(e).__name__, "at": utcnow()}
+    return RedirectResponse(f"/settings#{what}", status_code=303)
+
+
+@app.get("/settings/models")
+def list_models():
+    """Model IDs from the configured OpenAI-compatible endpoint (for the model picker)."""
+    import httpx
+
+    eff = secrets_store.effective()
+    if not eff.llm_api_key:
+        return JSONResponse({"models": [], "error": "Save an API key first."})
+    try:
+        r = httpx.get(eff.llm_base_url.rstrip("/") + "/models", timeout=20,
+                      headers={"Authorization": f"Bearer {eff.llm_api_key}"})
+        r.raise_for_status()
+        return JSONResponse({"models": sorted(m.get("id", "") for m in r.json().get("data", []))})
+    except Exception as e:  # noqa: BLE001
+        return JSONResponse({"models": [], "error": str(e)[:200]})

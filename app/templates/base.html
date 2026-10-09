@@ -18,7 +18,8 @@
 <body>
 {% set nav = [
   ("/", "Today", "today"), ("/constituency", "Constituency", "map"), ("/party", "Party Pulse", "party"),
-  ("/delhi", "Delhi", "delhi"), ("/explore", "Explore", "search"), ("/usage", "Usage", "usage")] %}
+  ("/delhi", "Delhi", "delhi"), ("/explore", "Explore", "search"), ("/usage", "Usage", "usage"),
+  ("/settings", "Settings", "settings")] %}
 {% set active = "/constituency" if path == "/place" else path %}
 <div class="shell">
   <aside class="sidebar">

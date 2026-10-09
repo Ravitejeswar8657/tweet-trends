@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% from "_ui.html" import icon %}
+{% macro source(f) -%}
+<span class="faint" style="font-size:12px">{{ {"dashboard": "saved here", ".env": "from .env file", "not set": "not set"}[eff.source[f]] }}</span>
+{%- endmacro %}
+{% macro test_result(key) -%}
+{% if tests.get(key) %}{% set t = tests[key] %}
+  <div class="banner {{ 'ok' if t.ok else 'red' }}" style="margin-top:4px"><span><strong>{{ "Works" if t.ok else "Failed" }}</strong> · {{ t.message }} <span class="faint">({{ t.at|ago }})</span></span></div>
+{% endif %}
+{%- endmacro %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p class="lede">Connect your X and OpenCode accounts and switch between sample data and live data. Changes apply within a minute; no restart needed.</p>
+  </div>
+</header>
+
+{% if insecure %}
+  <div class="banner amber" style="margin-bottom:16px">
+    <span><strong>This connection is not encrypted (http).</strong> Keys typed here travel over the internet in plain text.
+    Safer: open an SSH tunnel with <code>ssh -L 8000:localhost:8000 root@{{ request.url.hostname }}</code>, then use
+    <code>http://localhost:8000/settings</code>. Or set up HTTPS first.</span>
+  </div>
+{% endif %}
+{% if saved == "live" %}
+  <div class="banner ok" style="margin-bottom:16px"><span><strong>Live mode is on.</strong> Sample data was cleared. The first real posts arrive within a minute; use <a href="/usage">Usage → Run</a> to fetch now.</span></div>
+{% elif saved %}
+  <div class="banner ok" style="margin-bottom:16px"><span>Saved.</span></div>
+{% endif %}
+
+<form method="post" action="/settings" class="stack" style="gap:14px" autocomplete="off">
+  <section class="card stack" aria-labelledby="mode">
+    <h2 id="mode">Data source</h2>
+    <label class="choice">
+      <input type="radio" name="mode" value="mock" {{ "checked" if eff.mock_mode }}>
+      <span><strong>Sample data (mock)</strong><br><span class="muted">Generated Telugu and English posts. Free. Use this to try the dashboard.</span></span>
+    </label>
+    <label class="choice">
+      <input type="radio" name="mode" value="live" {{ "checked" if not eff.mock_mode }}>
+      <span><strong>Live data</strong><br><span class="muted">Real posts from X, tagged by OpenCode. Spends credits within the daily budget ({{ "$%.2f"|format(cfg.budget.daily_credit_limit) }}/day). Switching to live clears the sample data.</span></span>
+    </label>
+  </section>
+
+  <section class="card stack" id="x" aria-labelledby="xh">
+    <div class="spread"><h2 id="xh">X API</h2>{{ source("x_bearer_token") }}</div>
+    <label for="xt" style="font-weight:600">Bearer token</label>
+    <input id="xt" type="password" name="x_bearer_token" placeholder="{{ 'Saved ' ~ masked.x_bearer_token ~ ' (leave blank to keep)' if masked.x_bearer_token else 'Paste the Bearer token' }}" autocomplete="new-password" spellcheck="false">
+    <p class="muted" style="font-size:13px">developer.x.com → Projects &amp; Apps → your app → Keys and tokens → Bearer Token. Make sure the account has credits.</p>
+    {% if eff.source.x_bearer_token == "dashboard" %}<label class="row muted" style="font-size:13px"><input type="checkbox" name="clear_x" value="1"> Remove the saved token</label>{% endif %}
+  </section>
+
+  <section class="card stack" id="llm" aria-labelledby="lh">
+    <div class="spread"><h2 id="lh">OpenCode (Telugu tagging)</h2>{{ source("llm_api_key") }}</div>
+    <label for="lk" style="font-weight:600">API key</label>
+    <input id="lk" type="password" name="llm_api_key" placeholder="{{ 'Saved ' ~ masked.llm_api_key ~ ' (leave blank to keep)' if masked.llm_api_key else 'Paste the OpenCode API key' }}" autocomplete="new-password" spellcheck="false">
+    <label for="lm" style="font-weight:600">Model</label>
+    <div class="search-row">
+      <input id="lm" type="text" name="llm_model" value="{{ eff.llm_model }}" list="models" placeholder="e.g. kimi-k2.6" spellcheck="false">
+      <button class="btn" type="button" onclick="loadModels(this)">Load model list</button>
+    </div>
+    <datalist id="models"></datalist>
+    <p class="muted" style="font-size:13px" id="modelhint">Use a model served on /chat/completions: Kimi, DeepSeek, GLM or MiniMax. GPT and Claude models on OpenCode Zen use other routes and will not work here.</p>
+    <details>
+      <summary class="muted" style="font-size:13px">Advanced: endpoint</summary>
+      <input type="text" name="llm_base_url" value="{{ eff.llm_base_url }}" style="width:100%;margin-top:8px" spellcheck="false">
+    </details>
+    {% if eff.source.llm_api_key == "dashboard" %}<label class="row muted" style="font-size:13px"><input type="checkbox" name="clear_llm" value="1"> Remove the saved key</label>{% endif %}
+  </section>
+
+  <div class="row"><button class="btn btn-primary" type="submit">Save settings</button></div>
+</form>
+
+<section class="section card stack" aria-labelledby="tests">
+  <h2 id="tests">Test the connections</h2>
+  <p class="muted" style="font-size:13px">Save first, then test. Testing works in either mode.</p>
+  <div class="stack">
+    <div class="row">
+      <form class="inline" method="post" action="/settings/test/x"><button class="btn" type="submit">Test X</button></form>
+      <span class="muted" style="font-size:13px">Searches up to 10 posts (about $0.05).</span>
+    </div>
+    {{ test_result("x") }}
+    <div class="row">
+      <form class="inline" method="post" action="/settings/test/llm"><button class="btn" type="submit">Test OpenCode</button></form>
+      <span class="muted" style="font-size:13px">Translates one Telugu sentence (a fraction of a cent).</span>
+    </div>
+    {{ test_result("llm") }}
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  function loadModels(btn) {
+    btn.disabled = true; btn.textContent = "Loading…";
+    fetch("/settings/models").then(function (r) { return r.json(); }).then(function (d) {
+      var list = document.getElementById("models"); list.innerHTML = "";
+      (d.models || []).forEach(function (m) { var o = document.createElement("option"); o.value = m; list.appendChild(o); });
+      document.getElementById("modelhint").textContent = d.error ? ("Could not load models: " + d.error)
+        : (d.models.length + " models available. Click the Model box to pick one.");
+    }).finally(function () { btn.disabled = false; btn.textContent = "Load model list"; });
+  }
+</script>
+{% endblock %}

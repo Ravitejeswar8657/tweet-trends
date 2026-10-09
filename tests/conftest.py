@@ -9,6 +9,10 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("DISABLE_SCHEDULER", "true")
     monkeypatch.setenv("LLM_API_KEY", "")
     monkeypatch.setenv("X_BEARER_TOKEN", "test-token")
+    # Never let a developer's real .env leak into tests.
+    monkeypatch.setenv("APP_PASSWORD", "")
+    monkeypatch.setenv("LLM_MODEL", "")
+    monkeypatch.setenv("LLM_BASE_URL", "https://opencode.ai/zen/v1")
     from app import config, db
 
     for f in (config.get_settings, config.get_config, config.get_places, db.get_engine):

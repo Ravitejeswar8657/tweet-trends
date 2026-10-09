@@ -18,6 +18,7 @@ The full design is in [PLAN.md](PLAN.md).
 | **Delhi** | What's moving in Delhi for AP? Centre → AP, Parliament, AP ↔ Centre, topics, national trends. |
 | **Explore** | Ad-hoc search or post lookup, with the cost shown before it runs. |
 | **Usage** | Spend vs budget, where the money goes, job status, Pause all. |
+| **Settings** | X and OpenCode keys, model, sample vs live data, connection tests. |
 
 ## Run it (Docker)
 
@@ -28,6 +29,8 @@ docker compose up -d --build
 docker compose logs -f             # watch the jobs
 ```
 
+Set `APP_PASSWORD` in `.env` to require a login. Always do this on a public server, because the dashboard can trigger paid fetches.
+
 It starts in **mock mode**: generated Telugu and English posts and no API keys, so you can try every page for free. To use another port: `PORT=8080 docker compose up -d`.
 
 - **Change what is tracked:** edit `config.yaml` (handles, keywords, budget, polling) or `places.yaml` (mandals and spellings), then run `docker compose restart`.
@@ -35,6 +38,16 @@ It starts in **mock mode**: generated Telugu and English posts and no API keys, 
 - The container must run **one worker**. The scheduler runs inside the app, and more workers would poll twice and spend twice.
 
 ## Go live
+
+**Easiest: the Settings page.** Open **Settings** in the dashboard:
+1. Paste the X Bearer token and the OpenCode API key.
+2. Pick a model.
+3. Click **Save**, then **Test X** and **Test OpenCode**.
+4. Switch **Data source** to **Live data** and save. The sample data is cleared automatically.
+
+Keys saved there are stored in the data volume and override `.env`. The page never shows them back in full. The dashboard is plain http, so either enter keys through an SSH tunnel (`ssh -L 8000:localhost:8000 root@<server>`, then open http://localhost:8000/settings) or set up HTTPS first.
+
+**Or with the `.env` file:**
 
 1. **X API:** in the X developer console, buy pay-per-use credits and create a Bearer token.
 2. **LLM:** create an OpenCode API key and choose a model. Any OpenAI-compatible endpoint works.

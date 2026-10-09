@@ -15,7 +15,7 @@ from typing import Dict, List, Optional
 import httpx
 
 from app import budget
-from app.config import get_config, get_settings
+from app.config import get_config
 
 log = logging.getLogger("x_client")
 
@@ -150,11 +150,13 @@ class XClient:
 
 
 def get_client():
-    s = get_settings()
+    from app.secrets_store import effective
+
+    s = effective()
     if s.mock_mode:
         from app.mock_data import MockXClient
 
         return MockXClient()
     if not s.x_bearer_token:
-        raise XAPIError(401, "MOCK_MODE is false but X_BEARER_TOKEN is empty")
+        raise XAPIError(401, "Live mode is on but no X Bearer token is set (Settings page or .env)")
     return XClient(s.x_bearer_token)

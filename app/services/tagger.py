@@ -16,7 +16,7 @@ from pydantic import BaseModel, ValidationError
 from sqlmodel import select
 
 from app import budget
-from app.config import Places, get_config, get_places, get_settings
+from app.config import Places, get_config, get_places
 from app.db import session
 from app.models import Post, utcnow
 from app.services.places import match_places
@@ -207,7 +207,9 @@ class LLMTagger:
 
 
 def get_tagger() -> Tagger:
-    s = get_settings()
+    from app.secrets_store import effective
+
+    s = effective()
     if s.mock_mode:
         return MockTagger()
     if s.llm_api_key and s.llm_model:

@@ -172,6 +172,12 @@ select, input[type="text"], input[type="search"] {
 }
 .banner.red { background: var(--red-soft); border-color: var(--red); }
 .banner.amber { background: var(--amber-soft); border-color: var(--amber); }
+.banner.ok { background: var(--surface); border-color: var(--pos); }
+.choice { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }
+.choice:has(input:checked) { border-color: var(--ink); background: var(--surface-2); }
+.choice input { margin-top: 4px; }
+input[type="password"] { font: inherit; font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 10px; min-height: 40px; width: 100%; }
+code { font-size: 12.5px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
 .banner a { font-weight: 600; }
 
 /* ---------- layout ---------- */
