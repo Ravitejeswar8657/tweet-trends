@@ -259,13 +259,92 @@ parties:
     keywords: ["#YSRCP", "వైఎస్సార్సీపీ"]
 
 delhi:
-  handles:
+  # Group 1: Parliament. Fetched in full (the floor leader needs all House business).
+  parliament_handles:
     - LokSabhaSectt               # Lok Sabha Secretariat
     - sansad_tv                   # Sansad TV (listed on sansadtv.nic.in)
     - ombirlakota                 # Om Birla, Speaker, 18th Lok Sabha
     - mpa_india                   # Ministry of Parliamentary Affairs
-    - PIB_India                   # Press Information Bureau
+    - RamMNK                      # K. Ram Mohan Naidu, Union Civil Aviation Minister (TDP)
+    # Not found: Dr. Chandra Sekhar Pemmasani, MoS Rural Development & Communications (TDP)
+
+  # Group 2: PM and Union ministries. Fetched ONLY when the post is about Andhra Pradesh.
+  # The ap_filter is added to the X query itself, so non-AP posts are never downloaded
+  # and never cost credits. The query builder splits the handles into as many
+  # "(from:a OR from:b ...) <ap_filter> -is:retweet" queries as the length limit needs.
+  ap_filter: >-
+    (Andhra OR AndhraPradesh OR "Andhra Pradesh" OR ఆంధ్రప్రదేశ్ OR ఆంధ్ర
+    OR Amaravati OR Polavaram OR Visakhapatnam OR Vizag OR Vijayawada OR Guntur
+    OR Tirupati OR Kurnool OR Nellore OR Srikakulam OR Palnadu OR Narasaraopet
+    OR @AndhraPradeshCM OR @ncbn)
+  national_handles:
+    # Prime Minister
+    - narendramodi                # Narendra Modi
     - PMOIndia                    # Prime Minister's Office
+    # Central communication
+    - PIB_India                   # Press Information Bureau
+    - NITIAayog                   # NITI Aayog
+    - MIB_India                   # Information & Broadcasting
+    # Infrastructure (highways, rail, air, power, water)
+    - MORTHIndia                  # Road Transport & Highways
+    - RailMinIndia                # Railways
+    - MoCA_GoI                    # Civil Aviation
+    - MinOfPower                  # Power
+    - mnreindia                   # New & Renewable Energy
+    - PetroleumMin                # Petroleum & Natural Gas
+    - DoWRRDGR_MoJS               # Jal Shakti: water resources, river development (Polavaram)
+    - MoJSDDWS                    # Jal Shakti: drinking water & sanitation
+    - jaljeevan_                  # Jal Jeevan Mission
+    - MoHUA_India                 # Housing & Urban Affairs
+    - DoT_India                   # Telecommunications
+    # Schemes, welfare, rural
+    - MoRD_GoI                    # Rural Development (MGNREGA, PMAY-G)
+    - mopr_goi                    # Panchayati Raj
+    - AgriGoI                     # Agriculture & Farmers Welfare (PM-KISAN)
+    - fertmin_india               # Fertilizers
+    - FisheriesGoI                # Fisheries
+    - fooddeptgoi                 # Food & Public Distribution
+    - jagograhakjago              # Consumer Affairs
+    - MinOfCooperatn              # Cooperation
+    - MoHFW_INDIA                 # Health & Family Welfare
+    - EduMinOfIndia               # Education
+    - MinistryWCD                 # Women & Child Development
+    - MSJEGOI                     # Social Justice & Empowerment
+    - TribalAffairsIn             # Tribal Affairs
+    - LabourMinistry              # Labour & Employment
+    - MSDESkillIndia              # Skill India (check it is the ministry's own account)
+    - YASMinistry                 # Youth Affairs & Sports
+    # Economy and industry
+    - FinMinIndia                 # Finance
+    - CimGOI                      # Commerce & Industry (minister's office)
+    - minmsme                     # MSME
+    - SteelMinIndia               # Steel (Vizag Steel Plant)
+    - MHI_GoI                     # Heavy Industries
+    - GoI_MeitY                   # Electronics & IT
+    - TexMinIndia                 # Textiles
+    - CoalMinistry                # Coal
+    - MinesMinIndia               # Mines
+    - tourismgoi                  # Tourism
+    - moefcc                      # Environment, Forest & Climate Change
+    # Home, defence, external
+    - HMOIndia                    # Home Minister's Office
+    - SpokespersonMoD             # Defence (active PR account)
+    - MEAIndia                    # External Affairs (spokesperson)
+    # Not found (add after checking on x.com): NHAI, Ports Shipping & Waterways,
+    # Culture (possibly MinOfCultureGoI), Minority Affairs
+
+  # Group 3: AP government and party, as seen from Delhi. These accounts are already
+  # fetched in full by the TDP party job, so this costs NO extra credits. The Delhi
+  # page shows only their posts that match centre_filter (applied locally, in Python).
+  state_handles: [AndhraPradeshCM, JaiTDP]
+  centre_filter: [Centre, Central, Union, "Union Minister", Modi, "Prime Minister", PM,
+                  NDA, Delhi, Parliament, "Lok Sabha", NHAI, కేంద్ర, ప్రధాని]
+
+  # Topics the tagger picks from for Delhi posts (stored in Post.issue)
+  topics: [highways, railways, airports, ports, polavaram, amaravati_capital,
+           funds_budget, central_schemes, industry_investment, agriculture,
+           power_energy, health, education, parliament_business, other]
+
   keywords:
     - {name: AP in Parliament, query: '("Andhra Pradesh" OR AP) (Lok Sabha OR Parliament) -is:retweet'}
     - {name: Polavaram,        query: 'Polavaram -is:retweet'}
@@ -324,7 +403,7 @@ alerts:
 
 | Table | Fields |
 |---|---|
-| `Post` | id (tweet ID, PK), author_id, author_username, text, lang, created_at, likes, retweets, replies, quotes, impressions, conversation_id, **category** (`local` / `tdp` / `ysrcp` / `mp_mentions` / `delhi` / `explore`), **source** (query key), fetched_at. Tag fields: **ac**, **mandal**, **issue**, **sentiment** (`pos`/`neu`/`neg`), **party_stance** (`pro_tdp`/`anti_tdp`/`pro_ysrcp`/`anti_ysrcp`/`neutral`), **urgency** (0–3), **summary_en**, **tag_status** (`pending`/`done`/`failed`), tagged_at |
+| `Post` | id (tweet ID, PK), author_id, author_username, text, lang, created_at, likes, retweets, replies, quotes, impressions, conversation_id, **category** (`local` / `tdp` / `ysrcp` / `mp_mentions` / `delhi` / `explore`), **source** (query key), fetched_at. Tag fields: **ac**, **mandal**, **issue**, **sentiment** (`pos`/`neu`/`neg`), **party_stance** (`pro_tdp`/`anti_tdp`/`pro_ysrcp`/`anti_ysrcp`/`neutral`), **urgency** (0–3), **summary_en**, **ap_relevant** (Delhi posts only), **tag_status** (`pending`/`done`/`failed`), tagged_at |
 | `MetricSnapshot` | id, post_id (index), likes, retweets, replies, quotes, at. Used for party posts' engagement growth. |
 | `TrendSnapshot` | id, woeid (index), location, name, rank, tweet_count (nullable), fetched_at (index) |
 | `QueryState` | key (PK), since_id, interval_minutes, empty_runs, last_new_count, last_run_at. Drives `since_id` and adaptive polling. |
@@ -370,7 +449,9 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
   4. **Adaptive polling:** after 2 empty runs, the interval doubles, up to `max_backoff_factor` times the base. Any new posts reset it to the base interval.
   5. **Batch handles:** one search with `from:a OR from:b OR …` per party, not one timeline call per handle.
   6. **Ambiguous names stay out of the X query.** They are only used for matching posts that are already fetched.
-  7. A **Pause all** switch on the Usage page.
+  7. **The AP filter runs on X's side.** The PM and Union ministry accounts post hundreds of times a day, almost all about other states. Adding `ap_filter` to their query means X returns only AP-related posts, so the rest are never downloaded or paid for.
+  8. **No double-fetching.** CMO AP and JaiTDP are fetched once by the party job. The Delhi page reuses those posts with a local `centre_filter`, at no extra cost.
+  9. A **Pause all** switch on the Usage page.
 
 ---
 
@@ -378,6 +459,7 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
 
 ### 9.1 `places.py`
 - `build_ac_queries(places) -> {ac: query}`: ORs together each AC's unambiguous aliases (mandals and AC names) and appends `-is:retweet`. If a query is longer than X's query length limit (512 characters on lower access levels; check your account), it is split into parts (`ac:1`, `ac:2`).
+- `build_handle_queries(handles, filter=None) -> {key: query}`: a generic builder used by the party and Delhi jobs. It packs handles into `(from:a OR from:b …) <filter> -is:retweet` queries, starting a new query whenever the next handle would push it past the length limit. The keys are stable (`delhi:national:1`, `:2`, …), so `since_id` state survives restarts. The same splitting code backs `build_ac_queries`.
 - `match_places(text) -> [(ac, mandal)]`: a case-insensitive regex built from all aliases, with word boundaries for Latin script and plain substring matching for Telugu. Ambiguous aliases only count when another Palnadu or Narasaraopet term is in the same post. This is a pure function, it costs nothing, and it runs before the LLM.
 
 ### 9.2 `collect.py`
@@ -396,6 +478,7 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
   - Calls `POST {LLM_BASE_URL}/chat/completions` with httpx. Batches of 20 posts, temperature 0, and JSON response format where the provider supports it.
   - The system prompt includes the issue list, the AC and mandal list, and the party definitions. Each post comes with its `match_places` hint.
   - It must return, for every post: `{id, sentiment, issue, party_stance, ac, mandal, urgency, summary_en}`.
+  - For `delhi` posts, `issue` is chosen from `delhi.topics` (highways, railways, central_schemes, …) instead of the local issue list. The tagger also sets `ap_relevant: false` when a post matched the filter only by chance (for example, "Guntur" in an unrelated list). Those posts are hidden from the Delhi page.
   - `summary_en` is a one-line English gist, so staff can scan Telugu posts quickly.
   - Validates the output with pydantic and drops unknown ACs and issues to `null`/`other`. On a bad parse it retries the batch once, then marks the posts `failed`. It never crashes the job.
   - Records tokens and cost in `CreditLedger` (`kind=llm`).
@@ -422,6 +505,8 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
 - `sentiment_split(posts, by)`: pos/neu/neg counts by party, AC or hour.
 - `attack_lines(posts)`: among `ysrcp` posts with `party_stance=anti_tdp`, the top issues by engagement, with 2 example posts each. This is what the opposition is hitting TDP on.
 - `issue_heatmap(posts)`: AC × issue counts, plus each cell's negative share.
+- `centre_link(posts, terms)`: keeps the CMO AP and JaiTDP posts that mention the Centre (using `delhi.centre_filter`, case-insensitive, Telugu included). These feed the Delhi page's "AP ↔ Centre" section.
+- `delhi_digest(posts, hours)`: Delhi posts grouped by topic, ranked by velocity, with counts per ministry.
 - `top_hashtags(posts, n)` and `top_words(posts, n)`, which keep Telugu words and drop stop-words and URLs.
 
 ---
@@ -431,7 +516,7 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
 - `BackgroundScheduler` with these jobs:
   - `local` (each AC query)
   - `party` (TDP and YSRCP)
-  - `delhi` (handles and keywords)
+  - `delhi` (Parliament handles in full; PM and ministry handles with `ap_filter`; AP-in-Delhi keywords)
   - `trends`
   - `tag` (tags pending posts)
 - Intervals come from `polling.*`, and a job is skipped when its interval is 0. `next_run_time=now` makes each job run once at startup.
@@ -466,7 +551,7 @@ Pay-per-use means **every post read costs money**. The app treats the budget as 
 | `GET /constituency` | **Constituency**: *What's happening, and where?* | 1. A grid of **7 AC cards** (post volume, a pos/neu/neg bar, top issue, a red/amber dot if any alert). 2. An **AC × issue heatmap** (colour = volume, red outline = negative share above 50%). Clicking a cell opens that AC and issue. |
 | `GET /place?ac=&mandal=&issue=` | **Place drill-down** | Breadcrumb `Constituency › Macherla › Durgi`. Mandal chips with counts. Issue chips. A volume-by-hour chart. A post feed sorted by velocity. |
 | `GET /party` | **Party Pulse**: *How are TDP and YSRCP doing?* | 1. A **share-of-voice** line chart (TDP yellow, YSRCP blue). 2. A **sentiment by party** split bar. 3. **YSRCP attack lines**: issue, engagement, and 2 example posts, so staff see what needs a response. 4. **Top TDP posts** and **top YSRCP posts** by velocity, side by side on desktop and stacked on a phone. 5. **Reaction to the MP**: sentiment and top replies/mentions of @SriKrishnaLavu. |
-| `GET /delhi` | **Delhi**: *What's moving in Delhi?* | 1. **Parliament and ministries** feed. 2. **AP in Delhi** keyword feeds (Polavaram, Amaravati funds, …) as tabs. 3. **India and Delhi trends** with 🆕 NEW / ▲ RISING / ▼ FALLING badges and a rank-history sparkline. |
+| `GET /delhi` | **Delhi**: *What's moving in Delhi for AP?* | 1. **Centre → AP**: AP-related posts from the PM, PMO and Union ministries, with topic chips (Highways, Railways, Schemes, Polavaram, Funds…) and a ministry filter. Example card: "MoRTH · Highways · ₹2,400 Cr NH project sanctioned in Guntur". 2. **Parliament**: Lok Sabha, Speaker, Parliamentary Affairs and Sansad TV feed. 3. **AP ↔ Centre**: CMO AP and JaiTDP posts that mention the Centre. 4. **AP in Delhi** keyword feeds (Polavaram, Amaravati funds, …) as tabs. 5. **India and Delhi trends** with 🆕 NEW / ▲ RISING / ▼ FALLING badges and a rank-history sparkline. |
 | `GET /explore` | **Explore** | A query or post-ID box. Shows "≈ N posts, ≈ cost X" and a confirm button. Results come back tagged, as post cards. |
 | `GET /usage` | **Usage & status** | Credit and LLM spend today and this month vs the limits (meters). Spend by category (local / party / Delhi / explore). A table of jobs (last run, next run, interval, last error). A Pause/Resume all button. A MOCK MODE badge. |
 | `POST /refresh/{job}` | | Runs a job now (`local`, `party`, `delhi`, `trends`, `tag`), then redirects back with a 303 |
@@ -587,8 +672,8 @@ uvicorn app.main:app --reload
 4. **Phone layout:** at 360px width the bottom tabs show, there is no horizontal scroll, and Telugu renders in Noto Sans Telugu. Dark mode works.
 5. **Budget:** set `daily_credit_limit` very low with non-zero prices in mock mode. Jobs pause, the banner shows, and Pause/Resume works.
 6. **Unit tests (`pytest`):**
-   - `test_places.py`: English, spelling-variant and Telugu matching; ambiguous names (e.g. "Amaravati" alone → no match, "Amaravathi mandal, Palnadu" → match); the AC query builder splits queries over the length limit
-   - `test_insights.py`: `needs_attention` thresholds and levels, `share_of_voice` buckets, `attack_lines`, engagement and velocity math
+   - `test_places.py`: English, spelling-variant and Telugu matching; ambiguous names (e.g. "Amaravati" alone → no match, "Amaravathi mandal, Palnadu" → match); the AC query builder splits queries over the length limit; `build_handle_queries` packs the 46 national handles + `ap_filter` (≈4 queries at 512 chars) into queries that are all under the limit, with stable keys
+   - `test_insights.py`: `centre_link` keeps "కేంద్ర నిధులు…" and drops a CMO post with no Centre term; `needs_attention` thresholds and levels, `share_of_voice` buckets, `attack_lines`, engagement and velocity math
    - `test_tagger.py` (respx on the LLM endpoint): valid JSON → tags; bad JSON → one retry, then `failed`; unknown issue → `other`; no key → FallbackTagger
    - `test_budget.py`: `can_spend` at and over the limit, IST day boundary, `since_id` passed through, adaptive backoff and reset
    - `test_trends.py`: `compute_deltas` NEW/RISING/FALLING cases
