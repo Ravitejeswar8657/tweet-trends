@@ -133,11 +133,13 @@ delhi:
            funds_budget, central_schemes, industry_investment, agriculture,
            power_energy, health, education, parliament_business, other]
 
+  # Public topic searches. Cost cut: is:verified keeps only verified accounts (news outlets,
+  # journalists, officials). Without it these busy topics fill every poll with noise.
   keywords:
-    - {name: AP in Parliament, query: '("Andhra Pradesh" OR AP) (Lok Sabha OR Parliament) -is:retweet'}
-    - {name: Polavaram,        query: 'Polavaram -is:retweet'}
-    - {name: Amaravati funds,  query: 'Amaravati (funds OR Centre OR Union) -is:retweet'}
-    - {name: Special status,   query: '"special status" Andhra -is:retweet'}
+    - {name: AP in Parliament, query: '("Andhra Pradesh" OR AP) (Lok Sabha OR Parliament) is:verified -is:retweet'}
+    - {name: Polavaram,        query: 'Polavaram is:verified -is:retweet'}
+    - {name: Amaravati funds,  query: 'Amaravati (funds OR Centre OR Union) is:verified -is:retweet'}
+    - {name: Special status,   query: '"special status" Andhra is:verified -is:retweet'}
   trends:
     - {name: India, woeid: 23424848}
     - {name: Delhi, woeid: 20070458}
