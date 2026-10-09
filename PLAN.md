@@ -266,7 +266,7 @@ delhi:
     - ombirlakota                 # Om Birla, Speaker, 18th Lok Sabha
     - mpa_india                   # Ministry of Parliamentary Affairs
     - RamMNK                      # K. Ram Mohan Naidu, Union Civil Aviation Minister (TDP)
-    # Not found: Dr. Chandra Sekhar Pemmasani, MoS Rural Development & Communications (TDP)
+    - PemmasaniOnX                # Dr. Chandra Sekhar Pemmasani, MoS Rural Development & Communications (TDP)
 
   # Group 2: PM and Union ministries. Fetched ONLY when the post is about Andhra Pradesh.
   # The ap_filter is added to the X query itself, so non-AP posts are never downloaded
@@ -287,6 +287,8 @@ delhi:
     - MIB_India                   # Information & Broadcasting
     # Infrastructure (highways, rail, air, power, water)
     - MORTHIndia                  # Road Transport & Highways
+    - NHAI_Official               # National Highways Authority of India
+    - shipmin_india               # Ports, Shipping & Waterways
     - RailMinIndia                # Railways
     - MoCA_GoI                    # Civil Aviation
     - MinOfPower                  # Power
@@ -310,6 +312,7 @@ delhi:
     - EduMinOfIndia               # Education
     - MinistryWCD                 # Women & Child Development
     - MSJEGOI                     # Social Justice & Empowerment
+    - MOMAIndia                   # Minority Affairs
     - TribalAffairsIn             # Tribal Affairs
     - LabourMinistry              # Labour & Employment
     - MSDESkillIndia              # Skill India (check it is the ministry's own account)
@@ -325,13 +328,12 @@ delhi:
     - CoalMinistry                # Coal
     - MinesMinIndia               # Mines
     - tourismgoi                  # Tourism
+    - MinOfCultureGoI             # Culture
     - moefcc                      # Environment, Forest & Climate Change
     # Home, defence, external
     - HMOIndia                    # Home Minister's Office
     - SpokespersonMoD             # Defence (active PR account)
     - MEAIndia                    # External Affairs (spokesperson)
-    # Not found (add after checking on x.com): NHAI, Ports Shipping & Waterways,
-    # Culture (possibly MinOfCultureGoI), Minority Affairs
 
   # Group 3: AP government and party, as seen from Delhi. These accounts are already
   # fetched in full by the TDP party job, so this costs NO extra credits. The Delhi
@@ -672,7 +674,7 @@ uvicorn app.main:app --reload
 4. **Phone layout:** at 360px width the bottom tabs show, there is no horizontal scroll, and Telugu renders in Noto Sans Telugu. Dark mode works.
 5. **Budget:** set `daily_credit_limit` very low with non-zero prices in mock mode. Jobs pause, the banner shows, and Pause/Resume works.
 6. **Unit tests (`pytest`):**
-   - `test_places.py`: English, spelling-variant and Telugu matching; ambiguous names (e.g. "Amaravati" alone → no match, "Amaravathi mandal, Palnadu" → match); the AC query builder splits queries over the length limit; `build_handle_queries` packs the 46 national handles + `ap_filter` (≈4 queries at 512 chars) into queries that are all under the limit, with stable keys
+   - `test_places.py`: English, spelling-variant and Telugu matching; ambiguous names (e.g. "Amaravati" alone → no match, "Amaravathi mandal, Palnadu" → match); the AC query builder splits queries over the length limit; `build_handle_queries` packs the 50 national handles + `ap_filter` (≈4 queries at 512 chars) into queries that are all under the limit, with stable keys
    - `test_insights.py`: `centre_link` keeps "కేంద్ర నిధులు…" and drops a CMO post with no Centre term; `needs_attention` thresholds and levels, `share_of_voice` buckets, `attack_lines`, engagement and velocity math
    - `test_tagger.py` (respx on the LLM endpoint): valid JSON → tags; bad JSON → one retry, then `failed`; unknown issue → `other`; no key → FallbackTagger
    - `test_budget.py`: `can_spend` at and over the limit, IST day boundary, `since_id` passed through, adaptive backoff and reset
