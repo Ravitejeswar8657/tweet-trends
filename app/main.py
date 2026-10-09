@@ -1,7 +1,9 @@
 """FastAPI app: pages, actions, health. Route handlers are plain `def`, so they run in a threadpool."""
 from __future__ import annotations
 
+import base64
 import hashlib
+import secrets
 import logging
 import re
 from collections import OrderedDict
@@ -12,7 +14,7 @@ from typing import Optional
 from urllib.parse import urlencode
 
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import text
@@ -41,6 +43,24 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Narasaraopet Pulse", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+
+
+@app.middleware("http")
+async def require_login(request: Request, call_next):
+    """HTTP Basic auth when APP_PASSWORD is set. /healthz stays open for the Docker healthcheck."""
+    s = get_settings()
+    if not s.app_password or request.url.path == "/healthz":
+        return await call_next(request)
+    header = request.headers.get("authorization", "")
+    if header.lower().startswith("basic "):
+        try:
+            user, _, pw = base64.b64decode(header[6:]).decode().partition(":")
+        except ValueError:
+            user, pw = "", ""
+        if secrets.compare_digest(user, s.app_username) and secrets.compare_digest(pw, s.app_password):
+            return await call_next(request)
+    return Response("Login required", status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="Narasaraopet Pulse"'})
 templates = Jinja2Templates(directory=HERE / "templates")
 
 

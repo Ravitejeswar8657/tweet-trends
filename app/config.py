@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     config_path: Path = ROOT / "config.yaml"
     places_path: Path = ROOT / "places.yaml"
     disable_scheduler: bool = False  # tests and one-off scripts
+    app_username: str = "office"
+    app_password: str = ""  # set to require a login (strongly recommended on a public server)
 
 
 # ---------- places.yaml ----------

@@ -43,3 +43,17 @@ def test_explore_run_and_pause(app_client):
 def test_refresh_redirects_back(app_client):
     r = app_client.post("/refresh/party", headers={"referer": "http://testserver/party"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].endswith("/party")
+
+
+def test_login_required_when_password_set(monkeypatch):
+    from app import config
+    from app.main import app
+
+    monkeypatch.setenv("APP_PASSWORD", "s3cret")
+    config.get_settings.cache_clear()
+    with TestClient(app) as c:
+        assert c.get("/").status_code == 401
+        assert c.get("/", auth=("office", "wrong")).status_code == 401
+        assert c.get("/healthz").status_code == 200
+        assert c.get("/usage", auth=("office", "s3cret")).status_code == 200
+        assert c.post("/pause").status_code == 401
