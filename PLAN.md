@@ -380,12 +380,12 @@ polling:             # base minutes; 0 disables. Adaptive backoff can stretch th
   max_results: 20             # per request, 10-100
 
 budget:
-  daily_credit_limit: 2.00     # in your billing currency; jobs pause when reached
-  monthly_credit_limit: 50.00
-  # Pay-per-use prices change. Copy the current ones from the X developer console.
-  cost_per_post_read: 0.0
-  cost_per_user_lookup: 0.0
-  cost_per_trends_call: 0.0
+  daily_credit_limit: 5.00     # USD; ~1,000 post reads/day. Jobs pause when reached
+  monthly_credit_limit: 150.00
+  # Published pay-per-use rates as of Oct 2026 (USD). Confirm in the X developer console.
+  cost_per_post_read: 0.005    # per post returned (search, timeline)
+  cost_per_user_lookup: 0.010  # per user returned. Check whether expansions=author_id is billed this way
+  cost_per_trends_call: 0.0    # not published; set after the first billed call
   # LLM cost per 1M tokens (from your OpenCode dashboard)
   llm_cost_per_mtok_in: 0.0
   llm_cost_per_mtok_out: 0.0
