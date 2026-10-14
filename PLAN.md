@@ -218,8 +218,12 @@ assembly_constituencies:
 # Local: one search query per AC is built automatically from places.yaml.
 # Ambiguous aliases are left out of the X query (to save credits) and only used for matching.
 local:
-  extra_terms: ["Palnadu", "పల్నాడు"]
-  query_suffix: "-is:retweet"
+  # Cost cut: the district-wide "Palnadu" search was dropped. Its posts named no mandal or
+  # constituency, so they never reached the heatmap or Needs-attention. Add terms here to restore it.
+  extra_terms: []
+  # Cost cut: -is:reply skips replies inside threads (about a third of local posts). Replies to
+  # the MP are still caught by the separate MP-mentions search.
+  query_suffix: "-is:retweet -is:reply"
 
 # Handles found by web search (Oct 2026). Confirm each one on x.com (verified badge,
 # bio) before going live. Leaders whose handle could not be found are listed in

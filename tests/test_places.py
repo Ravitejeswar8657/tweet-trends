@@ -36,8 +36,11 @@ def test_ac_level_only_when_no_mandal():
 
 
 def test_ac_queries_skip_ambiguous_and_fit():
-    queries = build_ac_queries(get_places(), get_config().local, 512)
+    from app.config import LocalCfg
+
+    queries = build_ac_queries(get_places(), LocalCfg(extra_terms=["Palnadu"]), 512)
     assert "local:district" in queries
+    assert "local:district" not in build_ac_queries(get_places(), LocalCfg(extra_terms=[]), 512)
     assert all(len(q) <= 512 for q in queries.values())
     pk = queries["local:Pedakurapadu"]
     assert "Krosuru" in pk and "Amaravati" not in pk and "Bellamkonda" not in pk
@@ -70,3 +73,9 @@ def test_pack_raises_when_filter_too_long():
 
     with pytest.raises(ValueError):
         pack_or_queries(["from:x"], "{ors} " + "y" * 600, 512)
+
+
+def test_configured_local_queries_skip_replies():
+    queries = build_ac_queries(get_places(), get_config().local, get_config().polling.query_max_length)
+    assert all(q.endswith("-is:retweet -is:reply") for q in queries.values())
+    assert "local:district" not in queries
