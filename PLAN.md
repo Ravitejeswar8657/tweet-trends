@@ -238,7 +238,7 @@ parties:
     label: TDP
     color: "#F2C200"
     handles:
-      - JaiTDP                    # official party account (listed on TDP's own pages)
+      # JaiTDP (official party account) dropped as a cost cut: ~19 posts/day of our own messaging
       - ncbn                      # N. Chandrababu Naidu, CM and party president
       - naralokesh                # Nara Lokesh, national general secretary
       - AndhraPradeshCM           # CMO Andhra Pradesh (government account)
@@ -267,7 +267,7 @@ delhi:
   # Group 1: Parliament. Fetched in full (the floor leader needs all House business).
   parliament_handles:
     - LokSabhaSectt               # Lok Sabha Secretariat
-    - sansad_tv                   # Sansad TV (listed on sansadtv.nic.in)
+    # sansad_tv dropped as a cost cut: ~15 posts/day of speech clips; LokSabhaSectt covers business
     - ombirlakota                 # Om Birla, Speaker, 18th Lok Sabha
     - mpa_india                   # Ministry of Parliamentary Affairs
     - RamMNK                      # K. Ram Mohan Naidu, Union Civil Aviation Minister (TDP)
@@ -343,7 +343,7 @@ delhi:
   # Group 3: AP government and party, as seen from Delhi. These accounts are already
   # fetched in full by the TDP party job, so this costs NO extra credits. The Delhi
   # page shows only their posts that match centre_filter (applied locally, in Python).
-  state_handles: [AndhraPradeshCM, JaiTDP]
+  state_handles: [AndhraPradeshCM]
   centre_filter: [Centre, Central, Union, "Union Minister", Modi, "Prime Minister", PM,
                   NDA, Delhi, Parliament, "Lok Sabha", NHAI, కేంద్ర, ప్రధాని]
 
