@@ -240,6 +240,20 @@ def apply_tags(posts: List[Post], tags: List[Tag]) -> Dict[str, int]:
     return counts
 
 
+def describe_llm_error(e: Exception) -> str:
+    """A message staff can act on; shown in the red banner."""
+    status = getattr(getattr(e, "response", None), "status_code", None)
+    if status == 402:
+        return "OpenCode credits exhausted; posts are waiting to be tagged. Top up in the OpenCode console."
+    if status in (401, 403):
+        return "OpenCode rejected the API key; check it on the Settings page."
+    if status == 404:
+        return "OpenCode does not recognise the model; pick another on the Settings page."
+    if isinstance(e, httpx.TimeoutException):
+        return "OpenCode timed out; posts will be retried on the next run."
+    return f"OpenCode request failed ({status or type(e).__name__}); posts will be retried."
+
+
 def tag_pending(tagger: Optional[Tagger] = None, limit: int = 400) -> Dict[str, int]:
     if not _tag_lock.acquire(blocking=False):
         log.info("Tagging already running; skipping this pass")
@@ -260,6 +274,7 @@ def _tag_pending(tagger: Tagger, limit: int) -> Dict[str, int]:
             tags = tagger.tag(batch)
         except httpx.HTTPError as e:
             log.warning("LLM tagging request failed, will retry next run: %s", e)
+            totals["error"] = describe_llm_error(e)
             break  # leave them pending
         for k, v in apply_tags(batch, tags).items():
             totals[k] += v

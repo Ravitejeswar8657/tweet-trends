@@ -35,6 +35,10 @@ def _summary(results: List[dict]) -> str:
     return "; ".join(parts)
 
 
+class TaggingError(Exception):
+    """Raised so run_job records the problem and the dashboard shows a banner."""
+
+
 def run_job(name: str, fn: Callable[[], str]) -> None:
     try:
         msg = fn()
@@ -45,7 +49,7 @@ def run_job(name: str, fn: Callable[[], str]) -> None:
         last_errors[name] = (utcnow(), f"{e.status}: {e.message}")
     except Exception as e:  # noqa: BLE001 - a job must never crash the app
         log.exception("%s crashed", name)
-        last_errors[name] = (utcnow(), f"{type(e).__name__}: {e}")
+        last_errors[name] = (utcnow(), str(e) if isinstance(e, TaggingError) else f"{type(e).__name__}: {e}")
 
 
 # ---------- the jobs ----------
@@ -103,6 +107,8 @@ def job_trends(force: bool = False) -> str:
 
 def job_tag(force: bool = False) -> str:
     counts = tag_pending()
+    if counts.get("error"):
+        raise TaggingError(counts["error"])
     return f"{counts['done']} tagged, {counts['failed']} failed"
 
 

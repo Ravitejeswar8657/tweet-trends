@@ -65,7 +65,8 @@ def test_bad_json_retries_once_then_fails():
 def test_http_error_leaves_posts_pending():
     respx.post(f"{BASE}/chat/completions").mock(return_value=httpx.Response(503))
     make_posts()
-    assert tag_pending(LLMTagger(BASE, "key", "m")) == {"done": 0, "failed": 0}
+    counts = tag_pending(LLMTagger(BASE, "key", "m"))
+    assert (counts["done"], counts["failed"]) == (0, 0) and "503" in counts["error"]
     with session() as s:
         assert s.get(Post, "1").tag_status == "pending"
 
@@ -121,3 +122,24 @@ def test_only_one_tagging_pass_at_a_time():
     finally:
         tagger._tag_lock.release()
     assert tag_pending(tagger.MockTagger())["done"] == 2
+
+
+@respx.mock
+def test_out_of_credits_shows_in_banner():
+    from app import jobs, views
+    from app.services import tagger as tg
+
+    respx.post(f"{BASE}/chat/completions").mock(return_value=httpx.Response(402, json={"error": "Payment Required"}))
+    make_posts()
+    jobs.last_errors.clear()
+    orig = tg.get_tagger
+    jobs.tag_pending = lambda: tg.tag_pending(LLMTagger(BASE, "key", "m"))
+    try:
+        jobs.run_job("tag", jobs.job_tag)
+    finally:
+        jobs.tag_pending = tg.tag_pending
+    texts = [b["text"] for b in views.banner()]
+    assert any("OpenCode credits exhausted" in t for t in texts), texts
+    with session() as s:
+        assert s.get(Post, "1").tag_status == "pending"  # nothing lost; retried after top-up
+    jobs.last_errors.clear()
